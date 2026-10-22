@@ -70,7 +70,14 @@ public record ProfileAnalysisResult(
     List<TechUsageAudit> TechAudits,
     List<string> Strengths,
     List<string> RedFlags,
-    List<string> InterviewQuestions
+    List<InterviewQuestionDto> InterviewQuestions
+);
+
+public record InterviewQuestionDto(
+    string Question,
+    string Difficulty, // "Simple" or "Advanced"
+    string ExpectedAnswer,
+    List<string> ExpectedKeywords
 );
 
 public record TechUsageAudit(

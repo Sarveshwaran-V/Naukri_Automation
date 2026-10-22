@@ -57,12 +57,18 @@ public class GeminiService : IGeminiService
 
                 Knockout & Evaluation Rules:
                 1. Mandatory Skills: Check if candidate's key skills, designation, or snippet demonstrate the required mandatory skills. Missing core skills drastically drops match.
-                2. Notice Period Knockout: If MaxNoticePeriodDays is specified (> 0), parse the candidate's notice period. If candidate notice period clearly exceeds MaxNoticePeriodDays (e.g. 90 days when max allowed is 30 or 15 days), classify as SKIP or heavily penalize. Immediate or <= 15 days is preferred.
+                2. Notice Period Knockout & Anti-Hallucination Rules:
+                   - If candidate's noticePeriod is "Not specified", empty, or unknown:
+                     * You MUST NOT assume, guess, or invent a notice period under ANY circumstances.
+                     * In your reasoning, you MUST explicitly state: "Notice period: Not specified".
+                     * NEVER penalize, knock out, or reward a candidate based on notice period when it is "Not specified". Evaluate them purely on skills, role seniority, and experience.
+                   - If candidate's noticePeriod is explicitly provided (e.g. 15 days, 30 days, 90 days, immediate):
+                     * If MaxNoticePeriodDays is specified (> 0), check if candidate's notice period clearly exceeds MaxNoticePeriodDays (e.g. 90 days when max allowed is 30 or 15 days). If so, classify as SKIP or heavily penalize. Immediate or <= 15 days is preferred.
                 3. Total Experience: Assess if total experience aligns with seniority implied by the job title and raw text.
                 4. Recommendation Categories (Must be exactly one of these):
-                   - "WORTH OPENING": Strong match (score >= 75%), possesses mandatory skills, acceptable notice period.
+                   - "WORTH OPENING": Strong match (score >= 75%), possesses mandatory skills, acceptable notice period (or not specified).
                    - "MAYBE": Moderate match (score 50%-74%), partial skill overlap or slightly longer notice period.
-                   - "SKIP": Poor match (score < 50%), missing primary mandatory skills, or knocked out by notice period.
+                   - "SKIP": Poor match (score < 50%), missing primary mandatory skills, or knocked out by excessive notice period.
                 5. Output Requirement:
                    Return a strictly valid JSON object matching this schema:
                    {
@@ -71,7 +77,7 @@ public class GeminiService : IGeminiService
                          "candidateId": "string",
                          "matchPercentage": 85,
                          "recommendation": "WORTH OPENING",
-                         "reasoning": "Concise 1-2 sentence justification highlighting skills and notice period."
+                         "reasoning": "Concise 1-2 sentence justification highlighting skills and notice period (state 'Notice period: Not specified' if not provided)."
                        }
                      ]
                    }
@@ -276,12 +282,12 @@ public class GeminiService : IGeminiService
 
             // 2. Notice period knockout check
             int candidateNoticeDays = ExtractNoticePeriodDays(candidate.NoticePeriod);
-            if (candidateNoticeDays > 0)
+            if (candidateNoticeDays >= 0)
             {
                 if (candidateNoticeDays <= 15)
                 {
                     score += 15;
-                    reasons.Add($"Quick availability ({candidateNoticeDays}d notice)");
+                    reasons.Add(candidateNoticeDays == 0 ? "Immediate availability" : $"Quick availability ({candidateNoticeDays}d notice)");
                 }
                 else if (candidateNoticeDays > maxNoticeDays)
                 {
@@ -292,6 +298,10 @@ public class GeminiService : IGeminiService
                 {
                     reasons.Add($"Notice period {candidateNoticeDays}d within acceptable range");
                 }
+            }
+            else
+            {
+                reasons.Add("Notice period: Not specified");
             }
 
             // Clamp score between 10 and 98
@@ -346,7 +356,7 @@ public class GeminiService : IGeminiService
         {
             return new ProfileAnalysisResult(
                 "", "Unknown", 0, "DO NOT PROCEED", "No profile data provided.",
-                new List<TechUsageAudit>(), new List<string>(), new List<string> { "Empty profile data." }, new List<string>()
+                new List<TechUsageAudit>(), new List<string>(), new List<string> { "Empty profile data." }, new List<InterviewQuestionDto>()
             );
         }
 
@@ -378,14 +388,24 @@ public class GeminiService : IGeminiService
                    - Assign DepthLevel: "Primary / Production" (core day-to-day tool), "Secondary / Ancillary" (used occasionally), or "Keyword Stuffed / Not Evident".
                 2. Career Continuity & Seniority:
                    - Evaluate total tenure, career progression, stability, and whether their seniority matches the role title.
-                3. Knockout Parameters:
-                   - Evaluate notice period against MaxNoticePeriodDays. If they have 90 days notice and max allowed is 15-30 days, heavily flag it.
+                3. Knockout Parameters & Anti-Hallucination:
+                   - If the candidate's notice period is "Not specified", empty, or unknown, explicitly state "Notice period: Not specified" and do NOT invent or assume any notice period days.
+                   - If an explicit notice period is given, evaluate against MaxNoticePeriodDays.
                 4. Final Verdict Recommendation (Must be one of):
                    - "WORTH GOING FORWARD": Strong evidence of authentic hands-on usage of mandatory tech, within acceptable notice period, solid impact.
                    - "BORDERLINE / INTERVIEW WITH CAUTION": Partial hands-on depth, or border notice period, or missing 1 mandatory skill in actual projects.
                    - "DO NOT PROCEED": Core required tech is keyword stuffed without real project evidence, or severe knockout violation.
-                5. Probing Questions:
-                   - Provide 2-3 tough, specific technical questions targeting potential weak spots in their claimed projects.
+                5. Targeted HR Interview Questions & Answers (EXACTLY 5 Questions):
+                   Generate exactly 5 tailored interview questions based directly on the candidate's actual projects, claims, and technologies from their resume.
+                   IMPORTANT: The HR interviewer who will ask these questions is NOT a technical person. Therefore:
+                   - For each question, provide an "expectedAnswer" written in clear, plain English (2-3 sentences) so the non-technical HR recruiter can understand what a solid, knowledgeable response sounds like.
+                   - Provide "expectedKeywords": an array of 3-5 specific technical buzzwords or industry terms that the candidate should naturally say during their answer. The HR recruiter will listen for these keywords during the call.
+                   - Question breakdown (strictly 2 Simple and 3 Advanced):
+                     * Question 1: difficulty = "Simple" (Tests core day-to-day fundamentals and practical usage of their primary mandatory technology).
+                     * Question 2: difficulty = "Simple" (Tests practical API design, tooling, or project workflow from their recent employment).
+                     * Question 3: difficulty = "Advanced" (Tests system architecture, microservices, scalability, or distributed systems from their stated projects).
+                     * Question 4: difficulty = "Advanced" (Tests database optimization, query tuning, concurrency, or caching from their work history).
+                     * Question 5: difficulty = "Advanced" (Tests diagnosing a difficult production bug, handling outages, or architectural trade-offs).
 
                 Output Format (Strict JSON only, no markdown wrappers):
                 {
@@ -404,7 +424,14 @@ public class GeminiService : IGeminiService
                   ],
                   "strengths": ["string", "string"],
                   "redFlags": ["string", "string"],
-                  "interviewQuestions": ["string", "string", "string"]
+                  "interviewQuestions": [
+                    {
+                      "question": "Clear question for HR to ask",
+                      "difficulty": "Simple",
+                      "expectedAnswer": "Plain-English explanation of what a good candidate should say so non-technical HR can verify.",
+                      "expectedKeywords": ["Keyword1", "Keyword2", "Keyword3"]
+                    }
+                  ]
                 }
                 """;
 
@@ -501,15 +528,25 @@ public class GeminiService : IGeminiService
                     if (!string.IsNullOrWhiteSpace(partText))
                     {
                         var cleaned = CleanJsonString(partText);
-                        var result = JsonSerializer.Deserialize<ProfileAnalysisResult>(cleaned, JsonOptions);
-                        if (result != null)
+                        try
                         {
-                            return result with
+                            var result = JsonSerializer.Deserialize<ProfileAnalysisResult>(cleaned, JsonOptions);
+                            if (result != null && result.InterviewQuestions != null && result.InterviewQuestions.Count > 0)
                             {
-                                CandidateId = string.IsNullOrWhiteSpace(result.CandidateId) ? profile.CandidateId : result.CandidateId,
-                                CandidateName = string.IsNullOrWhiteSpace(result.CandidateName) ? profile.FullName : result.CandidateName
-                            };
+                                return result with
+                                {
+                                    CandidateId = string.IsNullOrWhiteSpace(result.CandidateId) ? profile.CandidateId : result.CandidateId,
+                                    CandidateName = string.IsNullOrWhiteSpace(result.CandidateName) ? profile.FullName : result.CandidateName
+                                };
+                            }
                         }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Direct deserialize of ProfileAnalysisResult failed; attempting fallback parser.");
+                        }
+
+                        // Robust fallback parser in case Gemini returned string array for interviewQuestions or partial JSON
+                        return ParseProfileAnalysisFallback(cleaned, profile, jobDescription);
                     }
                 }
             }
@@ -520,6 +557,115 @@ public class GeminiService : IGeminiService
         }
 
         return AnalyzeProfileLocally(jobDescription, profile, "[Parsing Fallback]");
+    }
+
+    private ProfileAnalysisResult ParseProfileAnalysisFallback(string cleanedJson, DetailedCandidateProfileDto profile, JobDescriptionDto jobDescription)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(cleanedJson);
+            var root = doc.RootElement;
+
+            string candidateId = root.TryGetProperty("candidateId", out var cidEl) && cidEl.GetString() is string cid && !string.IsNullOrWhiteSpace(cid) ? cid : profile.CandidateId;
+            string candidateName = root.TryGetProperty("candidateName", out var cnameEl) && cnameEl.GetString() is string cname && !string.IsNullOrWhiteSpace(cname) ? cname : profile.FullName;
+            int score = root.TryGetProperty("overallSuitabilityScore", out var sEl) && sEl.TryGetInt32(out var sc) ? sc : 50;
+            string rec = root.TryGetProperty("recommendation", out var recEl) && recEl.GetString() is string r ? r : "BORDERLINE / INTERVIEW WITH CAUTION";
+            string summary = root.TryGetProperty("executiveSummary", out var sumEl) && sumEl.GetString() is string sm ? sm : "Profile evaluated against requirements.";
+
+            var techAudits = new List<TechUsageAudit>();
+            if (root.TryGetProperty("techAudits", out var taEl) && taEl.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in taEl.EnumerateArray())
+                {
+                    string tech = item.TryGetProperty("technology", out var tEl) ? (tEl.GetString() ?? "") : "";
+                    bool used = item.TryGetProperty("actuallyUsedInCareer", out var uEl) && uEl.GetBoolean();
+                    string ev = item.TryGetProperty("careerEvidence", out var eEl) ? (eEl.GetString() ?? "") : "";
+                    string depth = item.TryGetProperty("depthLevel", out var dEl) ? (dEl.GetString() ?? "") : "Secondary / Ancillary";
+                    if (!string.IsNullOrWhiteSpace(tech))
+                    {
+                        techAudits.Add(new TechUsageAudit(tech, used, ev, depth));
+                    }
+                }
+            }
+
+            var strengths = new List<string>();
+            if (root.TryGetProperty("strengths", out var strEl) && strEl.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var s in strEl.EnumerateArray())
+                {
+                    if (s.GetString() is string strVal && !string.IsNullOrWhiteSpace(strVal)) strengths.Add(strVal);
+                }
+            }
+
+            var redFlags = new List<string>();
+            if (root.TryGetProperty("redFlags", out var rfEl) && rfEl.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var rfItem in rfEl.EnumerateArray())
+                {
+                    if (rfItem.GetString() is string rfVal && !string.IsNullOrWhiteSpace(rfVal)) redFlags.Add(rfVal);
+                }
+            }
+
+            var questions = new List<InterviewQuestionDto>();
+            if (root.TryGetProperty("interviewQuestions", out var iqEl) && iqEl.ValueKind == JsonValueKind.Array)
+            {
+                int qIndex = 0;
+                foreach (var q in iqEl.EnumerateArray())
+                {
+                    if (q.ValueKind == JsonValueKind.Object)
+                    {
+                        string qText = q.TryGetProperty("question", out var qt) ? (qt.GetString() ?? "") : "";
+                        string diff = q.TryGetProperty("difficulty", out var qd) ? (qd.GetString() ?? "") : (qIndex < 2 ? "Simple" : "Advanced");
+                        string ans = q.TryGetProperty("expectedAnswer", out var qa) ? (qa.GetString() ?? "") : "Candidate should explain practical hands-on experience and implementation.";
+                        var keywords = new List<string>();
+                        if (q.TryGetProperty("expectedKeywords", out var qk) && qk.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var kw in qk.EnumerateArray())
+                            {
+                                if (kw.GetString() is string kwStr && !string.IsNullOrWhiteSpace(kwStr)) keywords.Add(kwStr);
+                            }
+                        }
+                        if (!string.IsNullOrWhiteSpace(qText))
+                        {
+                            questions.Add(new InterviewQuestionDto(qText, diff, ans, keywords));
+                            qIndex++;
+                        }
+                    }
+                    else if (q.ValueKind == JsonValueKind.String && q.GetString() is string strQ && !string.IsNullOrWhiteSpace(strQ))
+                    {
+                        questions.Add(new InterviewQuestionDto(
+                            strQ,
+                            qIndex < 2 ? "Simple" : "Advanced",
+                            "Candidate should explain hands-on technical architecture and production decisions.",
+                            new List<string> { "Practical Implementation", "Clean Architecture", "Production Reliability" }
+                        ));
+                        qIndex++;
+                    }
+                }
+            }
+
+            if (questions.Count == 0)
+            {
+                questions = GenerateDefaultInterviewQuestions(jobDescription.MandatorySkills);
+            }
+
+            return new ProfileAnalysisResult(
+                candidateId,
+                candidateName,
+                score,
+                rec,
+                summary,
+                techAudits,
+                strengths,
+                redFlags,
+                questions
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "ParseProfileAnalysisFallback manual parse failed. Reverting to local audit.");
+            return AnalyzeProfileLocally(jobDescription, profile, "[Parsing Fallback]");
+        }
     }
 
     private static ProfileAnalysisResult AnalyzeProfileLocally(JobDescriptionDto job, DetailedCandidateProfileDto profile, string prefix = "")
@@ -576,13 +722,20 @@ public class GeminiService : IGeminiService
         int noticeDays = ExtractNoticePeriodDays(profile.NoticePeriod);
         int maxNotice = job.MaxNoticePeriodDays > 0 ? job.MaxNoticePeriodDays : 30;
 
-        if (noticeDays > 0 && noticeDays <= 15)
+        if (noticeDays >= 0)
         {
-            strengths.Add($"Quick availability ({noticeDays} days notice period).");
+            if (noticeDays <= 15)
+            {
+                strengths.Add(noticeDays == 0 ? "Immediate availability (0 days notice)." : $"Quick availability ({noticeDays} days notice period).");
+            }
+            else if (noticeDays > maxNotice)
+            {
+                redFlags.Add($"Notice period ({noticeDays} days) exceeds maximum requirement of {maxNotice} days.");
+            }
         }
-        else if (noticeDays > maxNotice)
+        else
         {
-            redFlags.Add($"Notice period ({noticeDays} days) exceeds maximum requirement of {maxNotice} days.");
+            strengths.Add("Notice period: Not specified on profile (verify with candidate during screening).");
         }
 
         // Score calculation
@@ -596,22 +749,21 @@ public class GeminiService : IGeminiService
             score += 30;
         }
 
-        if (noticeDays > maxNotice) score -= 25;
+        if (noticeDays >= 0 && noticeDays > maxNotice) score -= 25;
         score = Math.Clamp(score, 15, 95);
 
         string recommendation = score >= 75 ? "WORTH GOING FORWARD"
             : score >= 50 ? "BORDERLINE / INTERVIEW WITH CAUTION"
             : "DO NOT PROCEED";
 
-        var summary = $"Candidate has {profile.TotalExperience} of experience. Audited {mandatory.Count} required technologies with {authenticTechCount} verified in direct project descriptions. Notice period: {profile.NoticePeriod}.";
+        string noticeDisplay = string.IsNullOrWhiteSpace(profile.NoticePeriod) || profile.NoticePeriod.Contains("not specified", StringComparison.OrdinalIgnoreCase) 
+            ? "Not specified" 
+            : profile.NoticePeriod;
+
+        var summary = $"Candidate has {profile.TotalExperience} of experience. Audited {mandatory.Count} required technologies with {authenticTechCount} verified in direct project descriptions. Notice period: {noticeDisplay}.";
         if (!string.IsNullOrEmpty(prefix)) summary = $"{prefix} {summary}";
 
-        var questions = new List<string>
-        {
-            $"Can you explain how you designed and deployed microservices using {mandatory.FirstOrDefault() ?? ".NET Core"} in your recent project?",
-            "What architectural decisions did you make to handle database performance and concurrency?",
-            "Walk me through a difficult bug you diagnosed in a production environment."
-        };
+        var questions = GenerateDefaultInterviewQuestions(mandatory);
 
         return new ProfileAnalysisResult(
             profile.CandidateId,
@@ -626,11 +778,56 @@ public class GeminiService : IGeminiService
         );
     }
 
+    private static List<InterviewQuestionDto> GenerateDefaultInterviewQuestions(List<string>? mandatorySkills)
+    {
+        var mandatory = mandatorySkills ?? new List<string>();
+        var primaryTech = mandatory.FirstOrDefault(s => !string.IsNullOrWhiteSpace(s)) ?? ".NET Core / C#";
+        var secondTech = mandatory.Skip(1).FirstOrDefault(s => !string.IsNullOrWhiteSpace(s)) ?? "REST APIs";
+        var dbTech = mandatory.FirstOrDefault(s => s.Contains("sql", StringComparison.OrdinalIgnoreCase) || s.Contains("data", StringComparison.OrdinalIgnoreCase) || s.Contains("mongo", StringComparison.OrdinalIgnoreCase) || s.Contains("postgres", StringComparison.OrdinalIgnoreCase)) ?? "Relational Database / SQL";
+
+        return new List<InterviewQuestionDto>
+        {
+            new InterviewQuestionDto(
+                $"Can you describe your day-to-day experience with {primaryTech} and how dependency injection / service lifetimes are managed in your code?",
+                "Simple",
+                $"The candidate should explain the core principles of {primaryTech} and describe how services are registered (Transient creates a new instance each time, Scoped creates one per request, Singleton creates one for the entire application).",
+                new List<string> { "Dependency Injection", "Transient", "Scoped", "Singleton", "Constructor Injection" }
+            ),
+            new InterviewQuestionDto(
+                $"How do you design, validate, and test secure RESTful APIs using {secondTech} in your projects?",
+                "Simple",
+                "The candidate should describe standard HTTP verbs (GET, POST, PUT, DELETE), proper HTTP status codes (200, 201, 400, 404, 500), model validation, and using tools like Postman, Swagger/OpenAPI, or automated tests.",
+                new List<string> { "HTTP Verbs", "Status Codes (200, 400, 500)", "Model Validation", "Swagger / OpenAPI", "Unit Testing" }
+            ),
+            new InterviewQuestionDto(
+                "In your work with microservices or distributed systems, how do you handle service-to-service communication, eventual consistency, and network failures?",
+                "Advanced",
+                "The candidate should explain whether they use synchronous REST/gRPC or asynchronous message brokers (RabbitMQ/Kafka). They should discuss handling distributed transactions with eventual consistency and resilience patterns like Circuit Breakers and retries.",
+                new List<string> { "Message Broker (Kafka/RabbitMQ)", "Eventual Consistency", "Circuit Breaker", "gRPC / REST", "Resilience / Retries" }
+            ),
+            new InterviewQuestionDto(
+                $"Walk me through how you diagnose and optimize database query bottlenecks using {dbTech}. How do you ensure high query performance?",
+                "Advanced",
+                $"The candidate should explain analyzing slow queries using execution plans, adding appropriate indexes (clustered/non-clustered), resolving N+1 query problems in ORMs, and utilizing caching (such as Redis) to reduce database load.",
+                new List<string> { "Query Execution Plan", "Database Indexing", "N+1 Problem", "Connection Pooling", "Caching (Redis)" }
+            ),
+            new InterviewQuestionDto(
+                "Describe a critical production bug, memory leak, or concurrency issue you investigated. How did you identify the root cause and ensure zero downtime?",
+                "Advanced",
+                "The candidate should walk through a real incident systematically: checking application logs and metrics, analyzing thread dumps or memory allocations, applying an immediate mitigation, and deploying a permanent fix with zero downtime.",
+                new List<string> { "Root Cause Analysis", "Application Logs / APM", "Memory Leak / Deadlock", "Concurrency / Threading", "Zero-Downtime Deployment" }
+            )
+        };
+    }
+
     private static int ExtractNoticePeriodDays(string? noticeText)
     {
         if (string.IsNullOrWhiteSpace(noticeText)) return -1;
 
-        var lower = noticeText.ToLowerInvariant();
+        var lower = noticeText.ToLowerInvariant().Trim();
+        if (lower.Contains("not specified") || lower.Contains("not disclosed") || lower.Contains("unknown") || lower.Contains("n/a"))
+            return -1;
+
         if (lower.Contains("immediate") || lower.Contains("serving notice")) return 0;
         if (lower.Contains("15 days")) return 15;
         if (lower.Contains("1 month") || lower.Contains("30 days")) return 30;

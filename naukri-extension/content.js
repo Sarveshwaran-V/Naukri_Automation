@@ -82,17 +82,26 @@
       }
     });
 
-    let noticePeriod = '';
-    const noticeEl = card.querySelector('[class*="notice"], .notice-period, [title*="Notice"]');
+    let noticePeriod = 'Not specified';
+    const noticeEl = card.querySelector(
+      '[class*="notice"], [class*="Notice"], .notice-period, [title*="Notice"], [title*="notice"], [data-notice], [class*="availability"], [title*="Availability"]'
+    );
     if (noticeEl) {
-      noticePeriod = cleanText(noticeEl.innerText);
+      const rawNoticeText = cleanText(noticeEl.innerText);
+      const parsedMatch = rawNoticeText.match(/(?:notice\s*period|notice|availability)\s*[:\-–]?\s*(\b\d+\s*(?:days?|months?|mths?)\b|immediate(?:ly)?|serving\s*notice)/i);
+      noticePeriod = parsedMatch ? cleanText(parsedMatch[1]) : (rawNoticeText || 'Not specified');
     } else {
-      const noticeMatch = card.innerText.match(/(?:notice\s*period|notice)\s*[:\-]?\s*([0-9]+\s*(?:days|months|day|month)|immediate|serving\s*notice)/i);
-      if (noticeMatch) {
-        noticePeriod = cleanText(noticeMatch[1]);
+      // Strictly match only if preceded or explicitly labeled by notice/availability keywords
+      const strictNoticeMatch = card.innerText.match(/(?:notice\s*period|notice|available\s*(?:to\s*join\s*)?(?:in|within)?|availability)\s*[:\-–]?\s*(\b\d+\s*(?:days?|months?|mths?)\b|immediate(?:ly)?|serving\s*notice)/i);
+      if (strictNoticeMatch) {
+        noticePeriod = cleanText(strictNoticeMatch[1]);
       } else {
-        const directMatch = card.innerText.match(/\b(immediate|15\s*days|30\s*days|1\s*month|2\s*months|3\s*months|serving\s*notice)\b/i);
-        noticePeriod = directMatch ? cleanText(directMatch[0]) : 'Not specified';
+        const explicitServingMatch = card.innerText.match(/\b(serving\s*notice|immediate\s*joiner|immediate\s*availability)\b/i);
+        if (explicitServingMatch) {
+          noticePeriod = cleanText(explicitServingMatch[0]);
+        } else {
+          noticePeriod = 'Not specified';
+        }
       }
     }
 
@@ -196,46 +205,160 @@
   // SECTION 2: ROBUST DEEP PROFILE & RESUME AUDITOR
   // ==========================================
 
+  // Selectors for right-hand sidebars, similar candidates, and recommendation panels to EXCLUDE
+  const EXCLUDED_SIDEBAR_SELECTORS = [
+    'aside',
+    '.sidebar',
+    '[class*="sidebar"]',
+    '[class*="Sidebar"]',
+    '.right-panel',
+    '.right-section',
+    '.right-rail',
+    '.right-container',
+    '.right-col',
+    '.right-column',
+    '[class*="rightPanel"]',
+    '[class*="rightSection"]',
+    '[class*="rightRail"]',
+    '[class*="rightContainer"]',
+    '[class*="right-panel"]',
+    '[class*="right-section"]',
+    '[class*="right-rail"]',
+    '[class*="right-container"]',
+    '[class*="similar"]',
+    '[class*="Similar"]',
+    '[id*="similar"]',
+    '[id*="Similar"]',
+    '[class*="recommend"]',
+    '[class*="Recommend"]',
+    '[id*="recommend"]',
+    '[class*="suggest"]',
+    '[class*="Suggest"]',
+    '[class*="other-candidate"]',
+    '[class*="otherCandidate"]',
+    '[class*="other-cand"]',
+    '[class*="related-candidate"]',
+    '[class*="related-cand"]',
+    '.srp-tuple',
+    '.resdex-tuple',
+    '.tuple-box',
+    '#naukriAiAuditModal',
+    '.naukri-ai-modal-overlay'
+  ];
+
+  function isInsideExcludedSidebar(el) {
+    if (!el || el === document.body || el === document.documentElement) return false;
+    for (const sel of EXCLUDED_SIDEBAR_SELECTORS) {
+      try {
+        if (el.matches && el.matches(sel)) return true;
+        if (el.closest && el.closest(sel)) return true;
+      } catch (e) {}
+    }
+    return false;
+  }
+
+  function getPrimaryCandidateContainer() {
+    const candidateContainerSelectors = [
+      '#candidate-details',
+      '.cand-details',
+      '.resdex-profile',
+      '.full-profile-view',
+      '.resume-container',
+      '[data-page-type="candidate-profile"]',
+      '.left-container',
+      '.profile-left',
+      '[class*="profile-left"]',
+      '[class*="profileLeft"]',
+      '[class*="cand-details-main"]',
+      '[class*="profile-main"]',
+      '[class*="profileMain"]',
+      '.profile-container',
+      'main',
+      'article'
+    ];
+
+    for (const sel of candidateContainerSelectors) {
+      const candidates = Array.from(document.querySelectorAll(sel));
+      for (const el of candidates) {
+        if (!isInsideExcludedSidebar(el)) {
+          return el;
+        }
+      }
+    }
+    return document.body;
+  }
+
   function scrapeDetailedCandidateProfile() {
-    const candidateId = document.querySelector('[data-candidate-id], [data-cid]')?.getAttribute('data-candidate-id') ||
-      document.querySelector('[id*="candidate"]')?.id ||
+    const primaryContainer = getPrimaryCandidateContainer();
+
+    const candidateId = primaryContainer.querySelector('[data-candidate-id], [data-cid]')?.getAttribute('data-candidate-id') ||
+      document.querySelector('[data-candidate-id], [data-cid]')?.getAttribute('data-candidate-id') ||
+      primaryContainer.id ||
       `cand_profile_${Date.now()}`;
 
-    // Candidate Name
-    const nameEl = document.querySelector('.cand-name, .user-name, .name, [class*="candidate-name"], [class*="candName"], h1, .profile-name');
-    const fullName = cleanText(nameEl ? nameEl.innerText : 'Candidate');
+    // Candidate Name (ensuring not from a similar-candidate card)
+    const nameCandidateEls = Array.from(primaryContainer.querySelectorAll('.cand-name, .user-name, .name, [class*="candidate-name"], [class*="candName"], h1, .profile-name'))
+      .filter(el => !isInsideExcludedSidebar(el));
+    const fullName = cleanText(nameCandidateEls.length > 0 ? nameCandidateEls[0].innerText : 'Candidate');
 
     // Current Designation
-    const desigEl = document.querySelector('.designation, [class*="designation"], .current-role, .subTitle, h2, h3');
-    const currentDesignation = cleanText(desigEl ? desigEl.innerText : 'Current Role');
+    const desigCandidateEls = Array.from(primaryContainer.querySelectorAll('.designation, [class*="designation"], .current-role, .subTitle, h2, h3'))
+      .filter(el => !isInsideExcludedSidebar(el));
+    const currentDesignation = cleanText(desigCandidateEls.length > 0 ? desigCandidateEls[0].innerText : 'Current Role');
 
     // Total Experience
-    const expEl = document.querySelector('.exp, [class*="exp"], [class*="experience"], [title*="Yrs"]');
-    let totalExperience = cleanText(expEl ? expEl.innerText : '');
+    const expCandidateEls = Array.from(primaryContainer.querySelectorAll('.exp, [class*="exp"], [class*="experience"], [title*="Yrs"]'))
+      .filter(el => !isInsideExcludedSidebar(el));
+    let totalExperience = cleanText(expCandidateEls.length > 0 ? expCandidateEls[0].innerText : '');
     if (!totalExperience) {
-      const expMatch = document.body.innerText.match(/\b\d+(\.\d+)?\s*(?:to\s*\d+(\.\d+)?)?\s*(?:Yrs|Years|yr|yrs)\b/i);
+      const expMatch = primaryContainer.innerText.match(/\b\d+(\.\d+)?\s*(?:to\s*\d+(\.\d+)?)?\s*(?:Yrs|Years|yr|yrs)\b/i);
       totalExperience = expMatch ? expMatch[0] : 'Experience not specified';
     }
 
-    // Notice Period
+    // Clean cloned text to ensure no right-side candidate data leaks into the analysis
+    const cleanClone = primaryContainer.cloneNode(true);
+    EXCLUDED_SIDEBAR_SELECTORS.forEach(sel => {
+      try {
+        cleanClone.querySelectorAll(sel).forEach(el => el.remove());
+      } catch (e) {}
+    });
+    cleanClone.querySelectorAll('script, style, button, svg, noscript, nav, header, #naukriAiAuditModal').forEach(el => el.remove());
+    const fullProfileRawText = cleanText(cleanClone.innerText.slice(0, 5000));
+
+    // Notice Period - STRICT EXTRACTION ONLY (No random guesses or loose numbers)
     let noticePeriod = 'Not specified';
-    const noticeMatch = document.body.innerText.match(/(?:notice\s*period|notice)\s*[:\-]?\s*([0-9]+\s*(?:days|months|day|month)|immediate|serving\s*notice)/i);
-    if (noticeMatch) {
-      noticePeriod = cleanText(noticeMatch[1]);
+    const noticeCandidateEls = Array.from(primaryContainer.querySelectorAll(
+      '[class*="notice"], [class*="Notice"], .notice-period, [title*="Notice"], [title*="notice"], [data-notice], [class*="availability"], [title*="Availability"]'
+    )).filter(el => !isInsideExcludedSidebar(el));
+
+    if (noticeCandidateEls.length > 0) {
+      const rawText = cleanText(noticeCandidateEls[0].innerText);
+      const parsedMatch = rawText.match(/(?:notice\s*period|notice|availability)\s*[:\-–]?\s*(\b\d+\s*(?:days?|months?|mths?)\b|immediate(?:ly)?|serving\s*notice)/i);
+      noticePeriod = parsedMatch ? cleanText(parsedMatch[1]) : (rawText || 'Not specified');
     } else {
-      const directMatch = document.body.innerText.match(/\b(immediate|15\s*days|30\s*days|1\s*month|2\s*months|3\s*months|serving\s*notice)\b/i);
-      if (directMatch) noticePeriod = cleanText(directMatch[0]);
+      const strictNoticeMatch = fullProfileRawText.match(/(?:notice\s*period|notice|available\s*(?:to\s*join)?\s*(?:in|within)?|availability)\s*[:\-–]?\s*(\b\d+\s*(?:days?|months?|mths?)\b|immediate(?:ly)?|serving\s*notice)/i);
+      if (strictNoticeMatch) {
+        noticePeriod = cleanText(strictNoticeMatch[1]);
+      } else {
+        const servingMatch = fullProfileRawText.match(/\b(serving\s*notice|immediate\s*joiner|immediate\s*availability)\b/i);
+        if (servingMatch) {
+          noticePeriod = cleanText(servingMatch[0]);
+        } else {
+          noticePeriod = 'Not specified';
+        }
+      }
     }
 
     // Location & Salary
-    const locEl = document.querySelector('.loc, [class*="location"]');
-    const currentLocation = cleanText(locEl ? locEl.innerText : 'Location not specified');
+    const locEls = Array.from(primaryContainer.querySelectorAll('.loc, [class*="location"]')).filter(el => !isInsideExcludedSidebar(el));
+    const currentLocation = cleanText(locEls.length > 0 ? locEls[0].innerText : 'Location not specified');
 
-    const salEl = document.querySelector('.salary, [class*="salary"]');
-    const annualSalary = cleanText(salEl ? salEl.innerText : 'Not disclosed');
+    const salEls = Array.from(primaryContainer.querySelectorAll('.salary, [class*="salary"]')).filter(el => !isInsideExcludedSidebar(el));
+    const annualSalary = cleanText(salEls.length > 0 ? salEls[0].innerText : 'Not disclosed');
 
-    // Skills
-    const skillElements = document.querySelectorAll('.tags-gt, .tags, [class*="skill"], .skill-tag, .chip, [class*="tag"]');
+    // Skills (filtered to exclude skills of other candidates in sidebar)
+    const skillElements = Array.from(primaryContainer.querySelectorAll('.tags-gt, .tags, [class*="skill"], .skill-tag, .chip, [class*="tag"]'))
+      .filter(el => !isInsideExcludedSidebar(el));
     const keySkills = [];
     skillElements.forEach(el => {
       const s = cleanText(el.innerText);
@@ -243,9 +366,9 @@
     });
 
     // Work Experiences & Projects
-    const expContainers = Array.from(document.querySelectorAll(
+    const expContainers = Array.from(primaryContainer.querySelectorAll(
       '.experience-sec, .work-history-item, .exp-item, .job-detail, .experience-card, [class*="experience-item"], [class*="work-history"], .timeline-item'
-    ));
+    )).filter(el => !isInsideExcludedSidebar(el));
 
     const experiences = [];
     if (expContainers.length > 0) {
@@ -264,10 +387,6 @@
       });
     }
 
-    // Capture main container or full body text so Gemini always has full resume context
-    const profileContainer = document.querySelector('.profile-container, .cand-details, .resume-container, main, article') || document.body;
-    const fullProfileRawText = cleanText(profileContainer.innerText.slice(0, 5000));
-
     if (experiences.length === 0) {
       experiences.push({
         company: 'Career History',
@@ -277,8 +396,9 @@
       });
     }
 
-    const headlineEl = document.querySelector('.resume-headline, .summary, [class*="headline"]');
-    const resumeHeadline = cleanText(headlineEl ? headlineEl.innerText : '');
+    const headlineCandidateEls = Array.from(primaryContainer.querySelectorAll('.resume-headline, .summary, [class*="headline"]'))
+      .filter(el => !isInsideExcludedSidebar(el));
+    const resumeHeadline = cleanText(headlineCandidateEls.length > 0 ? headlineCandidateEls[0].innerText : '');
 
     return {
       candidateId,
@@ -429,9 +549,54 @@
 
     let strengthsHtml = (audit.strengths || []).map(s => `<li>${s}</li>`).join('') || '<li>Standard technical profile.</li>';
     let redFlagsHtml = (audit.redFlags || []).map(r => `<li>${r}</li>`).join('') || '<li>No major red flags detected.</li>';
-    let questionsHtml = (audit.interviewQuestions || []).map((q, i) => `
-      <div class="naukri-ai-q-item"><strong>Q${i + 1}:</strong> ${q}</div>
-    `).join('') || '<div class="naukri-ai-q-item">Verify recent project architecture.</div>';
+
+    // 5 Targeted HR Questions with Difficulty, Plain-English Expected Answers & Keyword Chips
+    let questionsHtml = '';
+    const qList = audit.interviewQuestions || [];
+    if (qList.length > 0) {
+      qList.forEach((item, i) => {
+        const isObj = typeof item === 'object' && item !== null;
+        const qText = isObj ? (item.question || 'Interview question') : item;
+        const diff = (isObj && item.difficulty) ? item.difficulty : (i < 2 ? 'Simple' : 'Advanced');
+        const expectedAns = isObj && item.expectedAnswer ? item.expectedAnswer : 'Candidate should demonstrate practical hands-on experience and implementation depth.';
+        const keywords = isObj && Array.isArray(item.expectedKeywords) ? item.expectedKeywords : [];
+
+        const isSimple = diff.toLowerCase() === 'simple';
+        const diffBadgeClass = isSimple ? 'diff-badge-simple' : 'diff-badge-advanced';
+        const diffIcon = isSimple ? '🟢' : '🟣';
+
+        let keywordsHtml = '';
+        if (keywords.length > 0) {
+          keywordsHtml = `
+            <div class="naukri-ai-q-keywords-row">
+              <span class="naukri-ai-keywords-label">🎧 Keywords to listen for:</span>
+              <div class="naukri-ai-keywords-chips">
+                ${keywords.map(kw => `<span class="naukri-ai-kw-chip">${kw}</span>`).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        questionsHtml += `
+          <div class="naukri-ai-hr-q-card">
+            <div class="naukri-ai-hr-q-top">
+              <div class="naukri-ai-hr-q-title-wrap">
+                <span class="naukri-ai-hr-q-num">Q${i + 1}</span>
+                <span class="naukri-ai-hr-q-text">${qText}</span>
+              </div>
+              <span class="naukri-ai-diff-badge ${diffBadgeClass}">${diffIcon} ${diff}</span>
+            </div>
+            <div class="naukri-ai-hr-ans-box">
+              <div class="naukri-ai-hr-ans-label">💡 Expected Candidate Answer (HR Guide):</div>
+              <div class="naukri-ai-hr-ans-text">${expectedAns}</div>
+              ${keywordsHtml}
+            </div>
+          </div>
+        `;
+      });
+    } else {
+      questionsHtml = '<div class="naukri-ai-q-item">Ask candidate about recent production architecture and technical decisions.</div>';
+    }
 
     modal.innerHTML = `
       <div class="naukri-ai-modal-card">
@@ -471,16 +636,22 @@
             </div>
           </div>
 
-          <!-- Probing Questions -->
+          <!-- 5 HR Screening Questions with Keywords -->
           <div>
-            <div class="naukri-ai-section-title">🎯 Targeted Interview Screening Questions</div>
-            <div class="naukri-ai-questions-box">${questionsHtml}</div>
+            <div class="naukri-ai-section-title" style="display: flex; justify-content: space-between; align-items: center;">
+              <span>🎯 5 HR Technical Screening Questions & Answers</span>
+              <span style="font-size: 11px; font-weight: normal; color: #64748b; text-transform: none;">2 Simple • 3 Advanced</span>
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin-top: -6px; margin-bottom: 12px;">
+              Designed for non-technical HR recruiters. Ask these questions and listen for the highlighted technical keywords in the candidate's answer.
+            </p>
+            <div class="naukri-ai-questions-stack">${questionsHtml}</div>
           </div>
         </div>
 
         <div class="naukri-ai-modal-footer">
           <button type="button" class="naukri-ai-modal-btn naukri-ai-modal-btn-copy" id="copyAuditReportBtn">
-            📋 Copy Audit Summary
+            📋 Copy Audit & HR Questions
           </button>
           <button type="button" class="naukri-ai-modal-btn naukri-ai-modal-btn-close" id="dismissAuditModalBtn">
             Close
@@ -496,11 +667,23 @@
     });
 
     modal.querySelector('#copyAuditReportBtn').addEventListener('click', () => {
-      const summaryText = `Candidate: ${audit.candidateName}\nScore: ${score}%\nVerdict: ${rec}\n\nSummary:\n${audit.executiveSummary}\n\nKey Strengths:\n${(audit.strengths || []).map(s => `- ${s}`).join('\n')}\n\nRed Flags:\n${(audit.redFlags || []).map(r => `- ${r}`).join('\n')}`;
+      let questionsCopyText = '';
+      if (qList.length > 0) {
+        questionsCopyText = '\n\n🎯 TARGETED HR SCREENING QUESTIONS & KEYWORDS:\n' + qList.map((item, idx) => {
+          const isObj = typeof item === 'object' && item !== null;
+          const qText = isObj ? item.question : item;
+          const diff = isObj && item.difficulty ? item.difficulty : (idx < 2 ? 'Simple' : 'Advanced');
+          const ans = isObj && item.expectedAnswer ? item.expectedAnswer : '';
+          const kws = isObj && Array.isArray(item.expectedKeywords) ? item.expectedKeywords.join(', ') : '';
+          return `Q${idx + 1} [${diff}]: ${qText}\n  Expected Answer: ${ans}\n  Keywords to Listen For: ${kws}`;
+        }).join('\n\n');
+      }
+
+      const summaryText = `Candidate: ${audit.candidateName}\nScore: ${score}%\nVerdict: ${rec}\n\nSummary:\n${audit.executiveSummary}\n\nKey Strengths:\n${(audit.strengths || []).map(s => `- ${s}`).join('\n')}\n\nRed Flags:\n${(audit.redFlags || []).map(r => `- ${r}`).join('\n')}${questionsCopyText}`;
       navigator.clipboard.writeText(summaryText);
       const btn = modal.querySelector('#copyAuditReportBtn');
       btn.textContent = '✓ Copied to Clipboard!';
-      setTimeout(() => btn.textContent = '📋 Copy Audit Summary', 2500);
+      setTimeout(() => btn.textContent = '📋 Copy Audit & HR Questions', 2500);
     });
   }
 
