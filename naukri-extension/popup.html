@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Naukri AI Matcher</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div>
+          <h1 class="brand-title">Naukri AI Matcher</h1>
+          <p class="brand-sub">.NET 10 + Gemini Evaluator</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div id="page-status" class="status-pill status-ready">Checking page...</div>
+        <button type="button" id="toggleSettingsBtn" class="icon-btn" title="Open Settings">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Collapsible Settings Panel (Backend URL only) -->
+    <section id="settingsPanel" class="settings-panel hidden">
+      <div class="settings-header">
+        <span>⚙️ Backend Configuration</span>
+        <button type="button" id="closeSettingsBtn" class="close-btn">&times;</button>
+      </div>
+      
+      <!-- Backend URL Configuration -->
+      <div class="form-group">
+        <div class="label-row">
+          <label for="apiUrl">Backend API URL</label>
+          <button type="button" id="toggleHttpBtn" class="link-btn">Switch to HTTPS (5001)</button>
+        </div>
+        <input 
+          type="text" 
+          id="apiUrl" 
+          class="form-control" 
+          placeholder="http://localhost:5000" 
+          value="http://localhost:5000" 
+        />
+      </div>
+    </section>
+
+    <!-- Main Job Description Form -->
+    <main class="form-body">
+      <!-- Job Title -->
+      <div class="form-group">
+        <label for="jobTitle">Target Job Title</label>
+        <input 
+          type="text" 
+          id="jobTitle" 
+          class="form-control" 
+          placeholder="e.g. Senior .NET Developer" 
+          value="Senior .NET Full Stack Engineer" 
+        />
+      </div>
+
+      <!-- Mandatory Skills & Notice Period in a grid -->
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label for="mandatorySkills">Mandatory Skills (Comma separated)</label>
+          <input 
+            type="text" 
+            id="mandatorySkills" 
+            class="form-control" 
+            placeholder="C#, .NET Core, Microservices, SQL" 
+            value="C#, .NET Core, Microservices, SQL, Entity Framework" 
+          />
+        </div>
+        <div class="form-group flex-0-3">
+          <label for="maxNoticePeriod">Max Notice (Days)</label>
+          <input 
+            type="number" 
+            id="maxNoticePeriod" 
+            class="form-control" 
+            min="0" 
+            max="180" 
+            value="30" 
+          />
+        </div>
+      </div>
+
+      <!-- Job Description Textarea -->
+      <div class="form-group">
+        <label for="jobDescription">Job Description / Requirements</label>
+        <textarea 
+          id="jobDescription" 
+          class="form-control" 
+          rows="4" 
+          placeholder="Paste job description text here..."
+        >We are looking for a Senior .NET Developer with 4+ years of hands-on experience in C#, ASP.NET Core, REST APIs, and microservices architecture. Strong knowledge of PostgreSQL/SQL Server, Docker, and CI/CD pipelines is preferred. Candidates must be available to join within 30 days or less.</textarea>
+      </div>
+
+      <!-- Action Buttons Row -->
+      <div class="action-buttons-stack">
+        <!-- Button 1: Deep Profile & Resume Career Analyzer (Primary) -->
+        <button id="deepAuditBtn" class="btn btn-purple">
+          <span class="btn-icon">🔍</span>
+          <span class="btn-text">Deep Analyze Opened Profile & Resume</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+
+        <!-- Button 2: Search Cards Matcher -->
+        <button id="evaluateBtn" class="btn btn-primary">
+          <span class="btn-icon">⚡</span>
+          <span class="btn-text">Evaluate Search Page Cards</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+      </div>
+
+      <!-- Status Alert Box -->
+      <div id="statusAlert" class="alert hidden"></div>
+
+      <!-- Results Summary Panel (For search page) -->
+      <div id="resultsPanel" class="results-panel hidden">
+        <div class="results-header">Search Cards Evaluation Summary</div>
+        <div class="stats-grid">
+          <div class="stat-card worth-opening">
+            <div class="stat-number" id="countWorth">0</div>
+            <div class="stat-label">Worth Opening</div>
+          </div>
+          <div class="stat-card maybe">
+            <div class="stat-number" id="countMaybe">0</div>
+            <div class="stat-label">Maybe</div>
+          </div>
+          <div class="stat-card skip">
+            <div class="stat-number" id="countSkip">0</div>
+            <div class="stat-label">Skip</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <span>Deeply audits candidate work history, project depth & technology authenticity</span>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

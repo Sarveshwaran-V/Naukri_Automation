@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Naukri AI Candidate Matcher",
+  "version": "1.0.0",
+  "description": "Evaluates Naukri candidate cards against Job Descriptions using .NET 10 & Gemini AI",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://*.naukri.com/*",
+    "http://localhost/*",
+    "https://localhost/*",
+    "file://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.naukri.com/*",
+        "http://localhost/*",
+        "https://localhost/*",
+        "file://*/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

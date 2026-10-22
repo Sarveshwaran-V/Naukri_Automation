@@ -1,0 +1,549 @@
+/* Naukri AI Matcher - Badge Styles */
+
+.naukri-ai-badge-container {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-left: 5px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: naukriAiFadeIn 0.3s ease-in-out;
+  position: relative;
+  z-index: 10;
+}
+
+@keyframes naukriAiFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Worth Opening - Green */
+.naukri-ai-worth-opening {
+  background-color: #f0fdf4;
+  border-color: #16a34a;
+  color: #14532d;
+}
+
+.naukri-ai-worth-opening .naukri-ai-tag {
+  background-color: #16a34a;
+  color: #ffffff;
+}
+
+/* Maybe - Orange/Amber */
+.naukri-ai-maybe {
+  background-color: #fffbeb;
+  border-color: #d97706;
+  color: #78350f;
+}
+
+.naukri-ai-maybe .naukri-ai-tag {
+  background-color: #d97706;
+  color: #ffffff;
+}
+
+/* Skip - Red */
+.naukri-ai-skip {
+  background-color: #fef2f2;
+  border-color: #dc2626;
+  color: #7f1d1d;
+}
+
+.naukri-ai-skip .naukri-ai-tag {
+  background-color: #dc2626;
+  color: #ffffff;
+}
+
+.naukri-ai-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  gap: 10px;
+}
+
+.naukri-ai-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.naukri-ai-rank {
+  background: #0f172a;
+  color: #ffffff;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.naukri-ai-tag {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.naukri-ai-score {
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.naukri-ai-branding {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.naukri-ai-reasoning {
+  font-size: 12px;
+  margin-top: 4px;
+  color: #334155;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 6px 10px;
+  border-radius: 5px;
+}
+
+.naukri-ai-card-highlight {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.naukri-ai-card-highlight[data-ai-rec="WORTH OPENING"] {
+  outline: 2px solid #22c55e !important;
+  outline-offset: -2px;
+}
+
+.naukri-ai-card-highlight[data-ai-rec="SKIP"] {
+  opacity: 0.75;
+}
+
+.naukri-ai-card-highlight[data-ai-rec="SKIP"]:hover {
+  opacity: 1;
+}
+
+/* Hidden state for filter buttons */
+[data-ai-hidden="true"] {
+  display: none !important;
+}
+
+/* On-Page Floating/Sticky Matcher Control Bar */
+.naukri-ai-toolbar {
+  position: sticky;
+  top: 10px;
+  z-index: 9999;
+  background: #ffffff;
+  border: 1px solid #0284c7;
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin: 12px 0 20px 0;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  animation: naukriAiFadeIn 0.3s ease;
+}
+
+.naukri-ai-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.naukri-ai-toolbar-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.naukri-ai-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.naukri-ai-btn {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.naukri-ai-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.naukri-ai-btn.active {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+}
+
+.naukri-ai-btn-reset {
+  background: transparent;
+  border: 1px dashed #94a3b8;
+  color: #64748b;
+}
+
+.naukri-ai-btn-reset:hover {
+  background: #f8fafc;
+  color: #334155;
+  border-color: #64748b;
+}
+
+/* Floating Action Button on Profile Page */
+.naukri-ai-profile-float-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 99999;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #ffffff;
+  border: none;
+  border-radius: 9999px;
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 18px rgba(99, 102, 241, 0.45);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.naukri-ai-profile-float-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 22px rgba(99, 102, 241, 0.55);
+}
+
+/* Deep Profile & Resume Career Audit Modal */
+.naukri-ai-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  animation: modalFadeIn 0.25s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.naukri-ai-modal-card {
+  background: #ffffff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: modalScaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScaleUp {
+  from { transform: scale(0.96) translateY(10px); }
+  to { transform: scale(1) translateY(0); }
+}
+
+.naukri-ai-modal-header {
+  padding: 16px 22px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+}
+
+.naukri-ai-modal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.naukri-ai-modal-score {
+  background: #0f172a;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.naukri-ai-modal-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.naukri-ai-modal-rec {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  display: inline-block;
+  margin-top: 2px;
+}
+
+.rec-proceed {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.rec-caution {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.rec-reject {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.naukri-ai-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #94a3b8;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.naukri-ai-modal-close:hover {
+  color: #0f172a;
+}
+
+.naukri-ai-modal-body {
+  padding: 20px 22px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.naukri-ai-section-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.naukri-ai-exec-summary {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Technology Authenticity Audit Cards */
+.naukri-ai-tech-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.naukri-ai-tech-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.naukri-ai-tech-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.naukri-ai-tech-name {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: #0f172a;
+}
+
+.naukri-ai-tech-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.tech-verified {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.tech-stuffed {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.naukri-ai-tech-evidence {
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+/* Strengths & Red Flags */
+.naukri-ai-dual-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.naukri-ai-pill-box {
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.box-strengths {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+}
+
+.box-redflags {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+}
+
+.naukri-ai-list {
+  padding-left: 18px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #334155;
+}
+
+/* Interview Probing Questions */
+.naukri-ai-questions-box {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.naukri-ai-q-item {
+  margin-bottom: 8px;
+  font-size: 12.5px;
+  color: #1e293b;
+  line-height: 1.4;
+}
+
+.naukri-ai-q-item:last-child {
+  margin-bottom: 0;
+}
+
+.naukri-ai-modal-footer {
+  padding: 12px 22px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: #f8fafc;
+}
+
+.naukri-ai-modal-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.naukri-ai-modal-btn-copy {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.naukri-ai-modal-btn-copy:hover {
+  background: #0369a1;
+}
+
+.naukri-ai-modal-btn-close {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+.naukri-ai-modal-btn-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.naukri-ai-audit-spinner {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto;
+  border: 4px solid #e0f2fe;
+  border-top-color: #0284c7;
+  border-radius: 50%;
+  animation: spinAudit 0.8s linear infinite;
+}
+
+@keyframes spinAudit {
+  to { transform: rotate(360deg); }
+}
