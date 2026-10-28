@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Naukri AI Candidate Matcher",
+  "name": "cAnbIdate",
   "version": "1.0.0",
   "description": "Evaluates Naukri candidate cards against Job Descriptions using .NET 10 & Gemini AI",
   "permissions": [
@@ -40,6 +40,8 @@
       ],
       "js": ["content.js"],
       "css": ["content.css"],
+      "all_frames": true,
+      "match_about_blank": true,
       "run_at": "document_idle"
     }
   ]

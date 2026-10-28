@@ -9,6 +9,7 @@ public record JobDescriptionDto(
     string Title,
     string RawText,
     List<string> MandatorySkills,
+    List<string>? PreferredSkills,
     int MaxNoticePeriodDays
 );
 

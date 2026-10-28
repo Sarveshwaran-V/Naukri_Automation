@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Naukri AI Matcher</title>
+  <title>cAnbIdate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
@@ -11,30 +14,67 @@
     <!-- Header -->
     <header class="app-header">
       <div class="brand">
-        <div class="brand-icon">⚡</div>
-        <div>
-          <h1 class="brand-title">Naukri AI Matcher</h1>
-          <p class="brand-sub">.NET 10 + Gemini Evaluator</p>
+        <div class="brand-mark" title="cAnbIdate">
+          <svg width="22" height="22" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="28" height="28" rx="7" fill="#090d16"/>
+            <rect x="0.5" y="0.5" width="27" height="27" rx="6.5" stroke="url(#brand_border)" stroke-opacity="0.3"/>
+            <path d="M7.5 20L13.5 8L19.5 20" stroke="url(#brand_accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 15.5H17" stroke="url(#brand_accent)" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="21.5" cy="9.5" r="1.5" fill="#38bdf8"/>
+            <path d="M21.5 13V20" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="brand_accent" x1="7.5" y1="8" x2="19.5" y2="20" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#38bdf8"/>
+                <stop offset="1" stop-color="#818cf8"/>
+              </linearGradient>
+              <linearGradient id="brand_border" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#ffffff"/>
+                <stop offset="1" stop-color="#38bdf8" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="brand-text-wrap">
+          <h1 class="brand-title">c<span class="ai-spark">A</span>nb<span class="ai-spark">I</span>date</h1>
+          <p class="brand-sub">Talent Intelligence & Resume Audit</p>
         </div>
       </div>
       <div class="header-right">
-        <div id="page-status" class="status-pill status-ready">Checking page...</div>
-        <button type="button" id="toggleSettingsBtn" class="icon-btn" title="Open Settings">⚙️</button>
+        <span id="resumeTick" class="resume-pill hidden" title="Attached CV detected on active page">
+          <span class="tick-mark">✓</span> Resume detected
+        </span>
+        <div id="page-status" class="status-pill status-ready">Checking...</div>
+        <button type="button" id="toggleSettingsBtn" class="icon-btn" title="Settings">⚙</button>
       </div>
     </header>
 
-    <!-- Collapsible Settings Panel (Backend URL only) -->
+    <!-- Collapsible Settings Panel -->
     <section id="settingsPanel" class="settings-panel hidden">
       <div class="settings-header">
-        <span>⚙️ Backend Configuration</span>
+        <span>Settings & Configuration</span>
         <button type="button" id="closeSettingsBtn" class="close-btn">&times;</button>
       </div>
-      
-      <!-- Backend URL Configuration -->
+
+      <!-- Gemini API Key Input -->
       <div class="form-group">
         <div class="label-row">
+          <label for="geminiApiKey" style="font-weight: 700; color: #0f172a;">Google Gemini API Key</label>
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" class="link-btn">Get free key ↗</a>
+        </div>
+        <input 
+          type="password" 
+          id="geminiApiKey" 
+          class="form-control" 
+          placeholder="Paste Gemini API key (AIzaSy...)" 
+          value="" 
+        />
+        <span style="font-size: 10.5px; color: #64748b;">Stored locally in your browser. Forwarded to Gemini API.</span>
+      </div>
+      
+      <div class="form-group" style="margin-top: 4px;">
+        <div class="label-row">
           <label for="apiUrl">Backend API URL</label>
-          <button type="button" id="toggleHttpBtn" class="link-btn">Switch to HTTPS (5001)</button>
+          <button type="button" id="toggleHttpBtn" class="link-btn">Use HTTPS (5001)</button>
         </div>
         <input 
           type="text" 
@@ -46,68 +86,90 @@
       </div>
     </section>
 
-    <!-- Main Job Description Form -->
+    <!-- Main Form -->
     <main class="form-body">
-      <!-- Job Title -->
-      <div class="form-group">
-        <label for="jobTitle">Target Job Title</label>
-        <input 
-          type="text" 
-          id="jobTitle" 
-          class="form-control" 
-          placeholder="e.g. Senior .NET Developer" 
-          value="Senior .NET Full Stack Engineer" 
-        />
-      </div>
-
-      <!-- Mandatory Skills & Notice Period in a grid -->
+      <!-- Job Title & Max Notice -->
       <div class="form-row">
         <div class="form-group flex-1">
-          <label for="mandatorySkills">Mandatory Skills (Comma separated)</label>
+          <label for="jobTitle">Target Job Title</label>
+          <input 
+            type="text" 
+            id="jobTitle" 
+            class="form-control" 
+            placeholder="e.g. Senior .NET Developer" 
+            value="Senior .NET Full Stack Engineer" 
+          />
+        </div>
+        <div class="form-group flex-notice">
+          <label for="maxNoticePeriod">Max Notice</label>
+          <div class="input-suffix-wrap">
+            <input 
+              type="number" 
+              id="maxNoticePeriod" 
+              class="form-control" 
+              min="0" 
+              max="180" 
+              value="30" 
+            />
+            <span class="input-suffix">days</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skills Section: Mandatory vs Skills -->
+      <div class="skills-card">
+        <div class="form-group">
+          <div class="label-row">
+            <label for="mandatorySkills" class="label-mandatory">
+              Mandatory Skills
+              <span class="priority-badge-high">Must-Have · Knockout</span>
+            </label>
+          </div>
           <input 
             type="text" 
             id="mandatorySkills" 
-            class="form-control" 
-            placeholder="C#, .NET Core, Microservices, SQL" 
+            class="form-control input-mandatory" 
+            placeholder="e.g. C#, .NET Core, SQL (Strict knockout criteria)" 
             value="C#, .NET Core, Microservices, SQL, Entity Framework" 
           />
         </div>
-        <div class="form-group flex-0-3">
-          <label for="maxNoticePeriod">Max Notice (Days)</label>
+
+        <div class="form-group" style="margin-top: 10px;">
+          <div class="label-row">
+            <label for="preferredSkills" class="label-preferred">
+              Skills
+              <span class="priority-badge-normal">Preferred · Bonus</span>
+            </label>
+          </div>
           <input 
-            type="number" 
-            id="maxNoticePeriod" 
+            type="text" 
+            id="preferredSkills" 
             class="form-control" 
-            min="0" 
-            max="180" 
-            value="30" 
+            placeholder="e.g. Docker, Redis, Azure, CI/CD (Bonus points)" 
+            value="Docker, Redis, Azure, CI/CD" 
           />
         </div>
       </div>
 
-      <!-- Job Description Textarea -->
+      <!-- Job Description -->
       <div class="form-group">
         <label for="jobDescription">Job Description / Requirements</label>
         <textarea 
           id="jobDescription" 
-          class="form-control" 
-          rows="4" 
-          placeholder="Paste job description text here..."
+          class="form-control text-area-compact" 
+          rows="3" 
+          placeholder="Paste requirements summary..."
         >We are looking for a Senior .NET Developer with 4+ years of hands-on experience in C#, ASP.NET Core, REST APIs, and microservices architecture. Strong knowledge of PostgreSQL/SQL Server, Docker, and CI/CD pipelines is preferred. Candidates must be available to join within 30 days or less.</textarea>
       </div>
 
-      <!-- Action Buttons Row -->
+      <!-- Action Buttons -->
       <div class="action-buttons-stack">
-        <!-- Button 1: Deep Profile & Resume Career Analyzer (Primary) -->
-        <button id="deepAuditBtn" class="btn btn-purple">
-          <span class="btn-icon">🔍</span>
+        <button id="deepAuditBtn" class="btn btn-primary">
           <span class="btn-text">Deep Analyze Opened Profile & Resume</span>
           <span class="btn-spinner hidden"></span>
         </button>
 
-        <!-- Button 2: Search Cards Matcher -->
-        <button id="evaluateBtn" class="btn btn-primary">
-          <span class="btn-icon">⚡</span>
+        <button id="evaluateBtn" class="btn btn-secondary">
           <span class="btn-text">Evaluate Search Page Cards</span>
           <span class="btn-spinner hidden"></span>
         </button>
@@ -118,19 +180,19 @@
 
       <!-- Results Summary Panel (For search page) -->
       <div id="resultsPanel" class="results-panel hidden">
-        <div class="results-header">Search Cards Evaluation Summary</div>
+        <div class="results-header">Evaluation Summary</div>
         <div class="stats-grid">
           <div class="stat-card worth-opening">
             <div class="stat-number" id="countWorth">0</div>
-            <div class="stat-label">Worth Opening</div>
+            <div class="stat-label">Strong Fit</div>
           </div>
           <div class="stat-card maybe">
             <div class="stat-number" id="countMaybe">0</div>
-            <div class="stat-label">Maybe</div>
+            <div class="stat-label">Review</div>
           </div>
           <div class="stat-card skip">
             <div class="stat-number" id="countSkip">0</div>
-            <div class="stat-label">Skip</div>
+            <div class="stat-label">Pass</div>
           </div>
         </div>
       </div>
@@ -138,7 +200,7 @@
 
     <!-- Footer -->
     <footer class="app-footer">
-      <span>Deeply audits candidate work history, project depth & technology authenticity</span>
+      <span>Evaluates candidates using .NET 10 API and Gemini</span>
     </footer>
   </div>
 
