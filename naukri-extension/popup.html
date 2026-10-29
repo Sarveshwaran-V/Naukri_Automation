@@ -15,21 +15,23 @@
     <header class="app-header">
       <div class="brand">
         <div class="brand-mark" title="cAnbIdate">
-          <svg width="22" height="22" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="24" height="24" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect width="28" height="28" rx="7" fill="#090d16"/>
-            <rect x="0.5" y="0.5" width="27" height="27" rx="6.5" stroke="url(#brand_border)" stroke-opacity="0.3"/>
-            <path d="M7.5 20L13.5 8L19.5 20" stroke="url(#brand_accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M10 15.5H17" stroke="url(#brand_accent)" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="21.5" cy="9.5" r="1.5" fill="#38bdf8"/>
-            <path d="M21.5 13V20" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
+            <rect x="0.75" y="0.75" width="26.5" height="26.5" rx="6.25" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+            <!-- Precision C-Arc -->
+            <path d="M19.5 9.5C18.1 7.4 15.6 6.4 12.8 6.8C9.5 7.3 6.8 10.3 6.5 13.8C6.1 17.8 9 21.2 12.9 21.5C15.8 21.7 18.2 20.3 19.6 18.5" stroke="url(#c_grad)" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- Center Talent Precision Star -->
+            <path d="M15 9L16.2 12.8L20 14L16.2 15.2L15 19L13.8 15.2L10 14L13.8 12.8L15 9Z" fill="url(#spark_grad)"/>
+            <circle cx="15" cy="14" r="1.2" fill="#ffffff"/>
             <defs>
-              <linearGradient id="brand_accent" x1="7.5" y1="8" x2="19.5" y2="20" gradientUnits="userSpaceOnUse">
+              <linearGradient id="c_grad" x1="6.5" y1="7" x2="19.5" y2="21.5" gradientUnits="userSpaceOnUse">
                 <stop stop-color="#38bdf8"/>
-                <stop offset="1" stop-color="#818cf8"/>
+                <stop offset="0.5" stop-color="#2563eb"/>
+                <stop offset="1" stop-color="#7c3aed"/>
               </linearGradient>
-              <linearGradient id="brand_border" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+              <linearGradient id="spark_grad" x1="10" y1="9" x2="20" y2="19" gradientUnits="userSpaceOnUse">
                 <stop stop-color="#ffffff"/>
-                <stop offset="1" stop-color="#38bdf8" stop-opacity="0"/>
+                <stop offset="1" stop-color="#38bdf8"/>
               </linearGradient>
             </defs>
           </svg>

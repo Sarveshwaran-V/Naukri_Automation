@@ -942,11 +942,20 @@
       ? 'c<span style="font-weight:850;color:#38bdf8;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">A</span>nb<span style="font-weight:850;color:#38bdf8;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">I</span>date Audit · LinkedIn'
       : 'c<span style="font-weight:850;color:#38bdf8;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">A</span>nb<span style="font-weight:850;color:#38bdf8;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">I</span>date Audit';
 
+    const brandIconSvg = `<svg width="15" height="15" viewBox="0 0 28 28" fill="none" style="flex-shrink:0;vertical-align:middle;margin-right:3px;">
+      <rect width="28" height="28" rx="7" fill="#090d16"/>
+      <rect x="0.75" y="0.75" width="26.5" height="26.5" rx="6.25" stroke="rgba(255,255,255,0.2)"/>
+      <path d="M19.5 9.5C18.1 7.4 15.6 6.4 12.8 6.8C9.5 7.3 6.8 10.3 6.5 13.8C6.1 17.8 9 21.2 12.9 21.5C15.8 21.7 18.2 20.3 19.6 18.5" stroke="#38bdf8" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M15 9L16.2 12.8L20 14L16.2 15.2L15 19L13.8 15.2L10 14L13.8 12.8L15 9Z" fill="#38bdf8"/>
+      <circle cx="15" cy="14" r="1.3" fill="#ffffff"/>
+    </svg>`;
+
     const floatBtn = document.createElement('button');
     floatBtn.id = 'naukriAiFloatAuditBtn';
     floatBtn.className = 'naukri-ai-profile-float-btn';
     floatBtn.innerHTML = `
       ${resumeBadgeHtml}
+      ${brandIconSvg}
       <span class="float-btn-label">${btnLabel}</span>
     `;
     floatBtn.title = isLinkedIn
