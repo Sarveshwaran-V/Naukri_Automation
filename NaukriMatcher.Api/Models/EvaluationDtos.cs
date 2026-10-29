@@ -71,7 +71,11 @@ public record ProfileAnalysisResult(
     List<TechUsageAudit> TechAudits,
     List<string> Strengths,
     List<string> RedFlags,
-    List<InterviewQuestionDto> InterviewQuestions
+    List<InterviewQuestionDto> InterviewQuestions,
+    string? NoticePeriodCategory = null,
+    string? RelievedDate = null,
+    int? TotalSwitches = null,
+    string? CurrentCompanyHandsOn = null
 );
 
 public record InterviewQuestionDto(

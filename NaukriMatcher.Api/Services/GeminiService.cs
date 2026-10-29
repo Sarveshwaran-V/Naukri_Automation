@@ -306,83 +306,83 @@ public class GeminiService : IGeminiService
             You are a Principal Technical Recruiter and Engineering Architect conducting a rigorous Deep Career Audit on a candidate's full profile and resume against a Job Description.
 
             YOUR PRIMARY OBJECTIVE:
-            Determine whether the candidate has ACTUALLY USED the required technologies in real production projects throughout their career, or whether they simply listed them as superficial keywords.
+            Determine whether the candidate has ACTUALLY USED the required technologies in real production projects throughout their career, with strict evaluation of 4 CRITICAL FACTORS:
+            1. Relieved Date & Notice Period Category (Crucial Availability Factor)
+            2. Active Hands-On Experience in Current Company (Recency & Production Depth)
+            3. Employment History, Company Tenure & Switch Analysis (Candidate Preference Factor)
+            4. Mandatory Skills Depth & Authenticity (Production Use vs Keyword Stuffing)
 
-            Auditing Rules:
-            1. Mandatory Skills Justification (CRITICAL MANDATORY REQUIREMENT):
+            CRITICAL AUDITING RULES:
+
+            1. NOTICE PERIOD & RELIEVED DATE EVALUATION (CRUCIAL FACTOR #1):
+               - Scrutinize the candidate profile, most recent employment duration (end date), resume headline, and raw text for:
+                 * Relieved Date / Last Working Day (LWD) / Exit status: e.g. "Relieved on 15-Oct-2023", "LWD: 30-Nov-2024", "Currently serving notice", or "Currently employed (Active / Not relieved)".
+                 * Stated Notice Period: e.g. Immediate, 15 days, 30 days, 60 days, 90 days, or "Not specified".
+               - Categorize Notice Period into EXACTLY ONE of these categories:
+                 * "Immediate Joiner": Relieved date has passed, or last working day is within 15 days, or serving notice ending soon, or stated notice <= 15 days / Immediate. (HIGHEST RECRUITER PREFERENCE).
+                 * "Short Notice Period": Notice period is between 16 and 30 days. (GOOD PREFERENCE).
+                 * "Long Notice Period": Notice period is >= 45, 60, or 90 days. (KNOCKOUT RISK / HEAVY PENALTY if MaxNoticePeriodDays is exceeded).
+                 * "Not Specified": If notice period is empty, unknown, or not mentioned, explicitly state "Not Specified" and NEVER invent or assume any days (Anti-Hallucination rule).
+               - Explicitly explain the recruitment impact of their availability.
+
+            2. HANDS-ON EXPERIENCE IN CURRENT COMPANY (CRITICAL FACTOR #2):
+               - Deeply analyze the candidate's CURRENT / MOST RECENT company in their employment history.
+               - Extract what specific technologies, tools, architecture, and frameworks they are ACTIVELY USING HANDS-ON TODAY in their daily production work.
+               - Differentiate between active daily production tools vs older, stale skills only used years ago at past employers.
+               - Candidates actively engineering with the job's mandatory technologies in their CURRENT role receive high preference.
+               - If mandatory skills are missing from their current role and only appear in past jobs (e.g. >2 years ago), flag this as a potential skill recency concern.
+
+            3. CAREER STABILITY & SWITCH ANALYSIS (CRITICAL FACTOR #3):
+               - Chronologically analyze the candidate's employment history:
+                 * List each company worked at, duration, and title.
+                 * Count total companies worked at and calculate total job switches (e.g. 2 switches across 3 companies).
+                 * Calculate average tenure per company (total years / number of companies).
+               - Assign a Stability & Recruiter Preference Rating:
+                 * "High Stability (Preferred)": Average tenure >= 2.0 years per company. Demonstrates strong commitment and continuity. Rewarded with higher preference and score boost.
+                 * "Moderate Stability": Average tenure between 1.2 and 2.0 years.
+                 * "Frequent Job Hopper (Risk)": Multiple switches under 1 year (< 12 months per company). Flag as hiring risk with score penalty unless clearly contract roles.
+               - Based on this stability analysis, explicitly declare candidate preference.
+
+            4. MANDATORY SKILLS JUSTIFICATION (CRITICAL MANDATORY REQUIREMENT):
                - YOU MUST EVALUATE EVERY SINGLE MANDATORY SKILL LISTED IN targetJob.mandatorySkills.
                - For EACH mandatory skill, provide an explicit, short, and concise explanation justifying:
-                 * WHY the candidate is good at it (e.g. hands-on production use, specific companies/projects, duration, concrete deliverables from work history or attached CV).
-                 * OR WHY the candidate is NOT fit in that skill (e.g. only listed in skill tags without project context, no evidence of practical usage in employment history/resume, or only academic/basic). Keep the non-fit explanation concise without going overly in-depth.
-               - This mandatory skill justification MUST appear in TWO places:
-                 a) AT THE VERY BEGINNING OF executiveSummary: Start executiveSummary with a structured breakdown for all mandatory skills:
-                    "Mandatory Skills Evaluation:
-                    • [Skill 1]: [Concise justification why candidate is good or not fit]
-                    • [Skill 2]: [Concise justification why candidate is good or not fit]
-                    ...
-                    Overall Assessment: [1-2 sentences on overall role fit against job description]."
-                 b) IN techAudits ARRAY: Every mandatory skill MUST be the first items in the techAudits array with technology, actuallyUsedInCareer (true if good/fit, false if not fit), depthLevel, and careerEvidence containing the concise justification.
+                 * WHY the candidate is good at it (hands-on production use, specific companies/projects, duration, concrete deliverables, and whether active in current company).
+                 * OR WHY the candidate is NOT fit in that skill (only listed in skill tags without project context, no evidence of practical usage, or only academic/basic). Keep concise.
+               - Must be reflected in:
+                 a) executiveSummary (in the Mandatory Skills Evaluation breakdown)
+                 b) techAudits ARRAY (every mandatory skill must be first, with actuallyUsedInCareer, depthLevel, and careerEvidence).
                - Weighting: If ANY mandatory skill lacks authentic project evidence or is not fit, heavily penalize the score (cap at 55% or lower) and recommend "BORDERLINE / INTERVIEW WITH CAUTION" or "DO NOT PROCEED".
 
-            2. Preferred Skills (Secondary Priority - 20% Weight):
-               - Check for preferred/secondary skills. Evidence acts as a positive booster.
-               - Do not heavily penalize or reject if preferred skills are missing, as long as all mandatory skills are satisfied.
+            5. PREFERRED SKILLS (SECONDARY PRIORITY - 20% WEIGHT):
+               - Positive booster if present; never heavily penalize or reject if missing when all mandatory skills are met.
 
-            3. Career Continuity & Seniority:
-               - Evaluate total tenure, career progression, stability, and whether their seniority matches the role title.
+            6. FINAL VERDICT RECOMMENDATION (Must be one of):
+               - "WORTH GOING FORWARD": Strong evidence of authentic hands-on usage of all mandatory skills (especially in current company), acceptable notice period (Immediate or Short preferred), solid career stability.
+               - "BORDERLINE / INTERVIEW WITH CAUTION": Partial hands-on depth, or border notice period, or missing 1 mandatory skill in current production, or moderate job hopping.
+               - "DO NOT PROCEED": Core tech keyword stuffed, excessive long notice knockout, or severe job hopping.
 
-            4. Knockout Parameters & Anti-Hallucination:
-               - If the candidate's notice period is "Not specified", empty, or unknown, explicitly state "Notice period: Not specified" and do NOT invent or assume any notice period days.
-               - If an explicit notice period is given, evaluate against MaxNoticePeriodDays.
+            7. TARGETED HR INTERVIEW QUESTIONS & ANSWERS (EXACTLY 5 Questions):
+               Strictly 2 Simple (fundamentals & daily API/workflow) and 3 Advanced (architecture, database/concurrency, production debugging/outages), with expectedAnswer in plain English for non-technical HR and 3-5 expectedKeywords to listen for.
 
-            5. Final Verdict Recommendation (Must be one of):
-               - "WORTH GOING FORWARD": Strong evidence of authentic hands-on usage of all mandatory skills, within acceptable notice period, solid impact.
-               - "BORDERLINE / INTERVIEW WITH CAUTION": Partial hands-on depth in mandatory skills, or border notice period, or missing 1 mandatory skill in actual projects.
-               - "DO NOT PROCEED": Core mandatory tech is keyword stuffed without real project evidence, or knockout violation.
-
-            6. Targeted HR Interview Questions & Answers (EXACTLY 5 Questions):
-               Generate exactly 5 tailored interview questions based directly on the candidate's actual projects, claims, and technologies from their resume.
-               IMPORTANT: The HR interviewer who will ask these questions is NOT a technical person. Therefore:
-               - For each question, provide an "expectedAnswer" written in clear, plain English (2-3 sentences) so the non-technical HR recruiter can understand what a solid, knowledgeable response sounds like.
-               - Provide "expectedKeywords": an array of 3-5 specific technical buzzwords or industry terms that the candidate should naturally say during their answer. The HR recruiter will listen for these keywords during the call.
-               - Question breakdown (strictly 2 Simple and 3 Advanced):
-                 * Question 1: difficulty = "Simple" (Tests core day-to-day fundamentals and practical usage of their primary mandatory technology).
-                 * Question 2: difficulty = "Simple" (Tests practical API design, tooling, or project workflow from their recent employment).
-                 * Question 3: difficulty = "Advanced" (Tests system architecture, microservices, scalability, or distributed systems from their stated projects).
-                 * Question 4: difficulty = "Advanced" (Tests database optimization, query tuning, concurrency, or caching from their work history).
-                 * Question 5: difficulty = "Advanced" (Tests diagnosing a difficult production bug, handling outages, or architectural trade-offs).
-
-            Output Format (Strict JSON only, no markdown wrappers):
+            8. OUTPUT SCHEMA (Strict JSON only, no markdown outside JSON):
             {
               "candidateId": "string",
               "candidateName": "string",
               "overallSuitabilityScore": 85,
               "recommendation": "WORTH GOING FORWARD",
-              "executiveSummary": "Mandatory Skills Evaluation:\n• C#: Good fit — 5+ years building production REST APIs and enterprise services at Company A and B.\n• .NET Core: Good fit — architected microservices using .NET 8/9 with Docker.\n• SQL: Good fit — hands-on database optimization and complex queries.\n\nOverall Assessment: Candidate demonstrates strong hands-on seniority matching the Senior .NET Engineer role requirements.",
-              "techAudits": [
-                {
-                  "technology": "C#",
-                  "actuallyUsedInCareer": true,
-                  "careerEvidence": "Hands-on production use for 5+ years across 2 companies building REST microservices.",
-                  "depthLevel": "Primary / Production"
-                },
-                {
-                  "technology": "Docker",
-                  "actuallyUsedInCareer": false,
-                  "careerEvidence": "Listed in skills tags only; no direct containerization tasks or deliverables evident in project history.",
-                  "depthLevel": "Keyword Stuffed / Not Evident"
-                }
+              "noticePeriodCategory": "Immediate Joiner",
+              "relievedDate": "Relieved on 15-Oct-2023",
+              "totalSwitches": 2,
+              "currentCompanyHandsOn": "Active hands-on development in C#, .NET 8, PostgreSQL, and Docker in current role",
+              "executiveSummary": "CRUCIAL FACTOR — NOTICE PERIOD & AVAILABILITY:\n• Category: Immediate Joiner\n• Stated Notice Period: Immediate\n• Relieved Date / LWD: Relieved on 15-Oct-2023 (Last Working Day passed)\n• Recruiter Impact: Highly preferred — ready for immediate onboarding with zero delay.\n\nCRITICAL FACTOR — CURRENT COMPANY HANDS-ON EXPERIENCE:\n• Current Company: TechCorp Solutions (Senior Software Engineer, 2 yrs 3 mos)\n• Active Hands-On Tech Stack: C#, ASP.NET Core, PostgreSQL, Docker, Microservices\n• Production Responsibilities: Actively designs REST microservices and optimizes database queries in daily production.\n\nCAREER STABILITY & SWITCH ANALYSIS:\n• Total Switches: 2 switches across 3 companies\n• Average Tenure: 2.8 years per company\n• Stability Preference: High Stability (Preferred) — demonstrates strong retention and career continuity.\n• Career Progression: Company A (2.3 yrs) -> Company B (3 yrs) -> Company C (2 yrs)\n\nMandatory Skills Evaluation:\n• C#: Good fit — active daily production use in current company for 2+ years building microservices.\n• .NET Core: Good fit — architected scalable services at current and previous company.\n• SQL: Good fit — hands-on database optimization and complex queries.\n\nOverall Assessment: Candidate is a strong fit with immediate availability, excellent career stability, and verified current hands-on expertise in the mandatory stack.",
+              "techAudits": [ ... ],
+              "strengths": [
+                "Immediate Joiner — Relieved on Oct 2023, available for immediate onboarding",
+                "Current Company Hands-On: Actively building production .NET Core microservices today",
+                "High Career Stability: Average tenure of 2.8 years per company across 2 switches"
               ],
-              "strengths": ["string", "string"],
-              "redFlags": ["string", "string"],
-              "interviewQuestions": [
-                {
-                  "question": "Clear question for HR to ask",
-                  "difficulty": "Simple",
-                  "expectedAnswer": "Plain-English explanation of what a good candidate should say so non-technical HR can verify.",
-                  "expectedKeywords": ["Keyword1", "Keyword2", "Keyword3"]
-                }
-              ]
+              "redFlags": [ ... ],
+              "interviewQuestions": [ ... ]
             }
             """;
 
@@ -496,7 +496,12 @@ public class GeminiService : IGeminiService
                                 {
                                     CandidateId = string.IsNullOrWhiteSpace(result.CandidateId) ? profile.CandidateId : result.CandidateId,
                                     CandidateName = string.IsNullOrWhiteSpace(result.CandidateName) ? profile.FullName : result.CandidateName,
-                                    ExecutiveSummary = FormatExecutiveSummaryHtml(result.ExecutiveSummary)
+                                    ExecutiveSummary = FormatExecutiveSummaryHtml(
+                                        result.ExecutiveSummary,
+                                        result.NoticePeriodCategory,
+                                        result.RelievedDate,
+                                        result.TotalSwitches,
+                                        result.CurrentCompanyHandsOn)
                                 };
                             }
                         }
@@ -529,7 +534,13 @@ public class GeminiService : IGeminiService
         int score = root.TryGetProperty("overallSuitabilityScore", out var sProp) ? (sProp.GetInt32()) : 65;
         string rec = root.TryGetProperty("recommendation", out var recProp) ? (recProp.GetString() ?? "BORDERLINE / INTERVIEW WITH CAUTION") : "BORDERLINE / INTERVIEW WITH CAUTION";
         string summary = root.TryGetProperty("executiveSummary", out var sumProp) ? (sumProp.GetString() ?? "Candidate profile analyzed against target role.") : "Candidate profile analyzed against target role.";
-        summary = FormatExecutiveSummaryHtml(summary);
+
+        string? noticeCat = root.TryGetProperty("noticePeriodCategory", out var ncp) ? ncp.GetString() : null;
+        string? relieved = root.TryGetProperty("relievedDate", out var rdp) ? rdp.GetString() : null;
+        int? switches = root.TryGetProperty("totalSwitches", out var tsp) && tsp.TryGetInt32(out var tsVal) ? tsVal : null;
+        string? currentHandsOn = root.TryGetProperty("currentCompanyHandsOn", out var cchp) ? cchp.GetString() : null;
+
+        summary = FormatExecutiveSummaryHtml(summary, noticeCat, relieved, switches, currentHandsOn);
 
         var techAudits = new List<TechUsageAudit>();
         if (root.TryGetProperty("techAudits", out var techArray) && techArray.ValueKind == JsonValueKind.Array)
@@ -612,7 +623,11 @@ public class GeminiService : IGeminiService
             techAudits,
             strengths,
             redFlags,
-            questions
+            questions,
+            noticeCat,
+            relieved,
+            switches,
+            currentHandsOn
         );
     }
 
@@ -621,90 +636,369 @@ public class GeminiService : IGeminiService
         DetailedCandidateProfileDto profile,
         CancellationToken cancellationToken = default)
     {
-        // =========================================================================
-        // LINKEDIN RECRUITER AI EVALUATION PIPELINE
-        // =========================================================================
-        // When you are ready to activate full Gemini evaluations for LinkedIn Recruiter,
-        // you can simply uncomment the line below to use the deep career technology auditor:
+        // When activating full Gemini evaluations for LinkedIn Recruiter,
+        // simply uncomment the line below to use the deep career technology auditor:
         //
         // return await AnalyzeDetailedProfileAsync(jobDescription, profile, cancellationToken);
-        //
-        // Or write custom prompt logic tailored to LinkedIn Recruiter.
-        // The extension is already completely wired to this endpoint!
-        // =========================================================================
 
         throw new NotImplementedException("LinkedIn Recruiter backend pipeline is pending deployment. Implement prompt logic in AnalyzeLinkedInProfileAsync in GeminiService.cs.");
     }
 
-    private static string FormatExecutiveSummaryHtml(string rawSummary)
+    private static string FormatExecutiveSummaryHtml(
+        string rawSummary,
+        string? noticePeriodCategory = null,
+        string? relievedDate = null,
+        int? totalSwitches = null,
+        string? currentCompanyHandsOn = null)
     {
         if (string.IsNullOrWhiteSpace(rawSummary))
             return "<p>Profile evaluated against target job description.</p>";
 
         var trimmed = rawSummary.Trim();
-        // If it already has clean HTML tags like <div>, <p>, or <ul>, return trimmed
-        if (trimmed.Contains("<div") || trimmed.Contains("<p") || trimmed.Contains("<ul") || trimmed.Contains("<li"))
+
+        // If it already has fully structured HTML cards from our formatter, return as-is
+        if (trimmed.Contains("CRUCIAL FACTOR") && (trimmed.Contains("<div") || trimmed.Contains("<p")))
         {
             return trimmed;
         }
 
         var lines = trimmed.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
-        var sb = new StringBuilder();
+
+        var noticeLines = new List<string>();
+        var currentCompanyLines = new List<string>();
+        var stabilityLines = new List<string>();
+        var skillLines = new List<string>();
+        var overallLines = new List<string>();
+        var otherLines = new List<string>();
+
+        int currentSection = 0; // 1 = Notice, 2 = Current Company, 3 = Stability, 4 = Skills, 5 = Overall
 
         foreach (var rawLine in lines)
         {
             var line = rawLine.Trim();
             if (string.IsNullOrWhiteSpace(line)) continue;
 
-            // Check if line is a section header like "Mandatory Skills Evaluation:"
+            // Detect section headers
+            if (line.Contains("NOTICE PERIOD", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("AVAILABILITY", StringComparison.OrdinalIgnoreCase) ||
+                (line.Contains("RELIEVED", StringComparison.OrdinalIgnoreCase) && line.Contains("FACTOR", StringComparison.OrdinalIgnoreCase)))
+            {
+                currentSection = 1;
+                continue;
+            }
+            if (line.Contains("CURRENT COMPANY", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("CURRENT ROLE", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("HANDS-ON EXPERIENCE", StringComparison.OrdinalIgnoreCase))
+            {
+                currentSection = 2;
+                continue;
+            }
+            if (line.Contains("CAREER STABILITY", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("SWITCH ANALYSIS", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("EMPLOYMENT HISTORY", StringComparison.OrdinalIgnoreCase))
+            {
+                currentSection = 3;
+                continue;
+            }
             if (line.StartsWith("Mandatory Skills", StringComparison.OrdinalIgnoreCase) ||
                 line.StartsWith("Skills Evaluation", StringComparison.OrdinalIgnoreCase) ||
                 line.StartsWith("Skills Breakdown", StringComparison.OrdinalIgnoreCase))
             {
-                sb.Append("<div style=\"font-weight: 700; margin-bottom: 6px; color: #0f172a; font-size: 13px;\">")
-                  .Append(line)
-                  .Append("</div>");
+                currentSection = 4;
+                continue;
             }
-            // Check if line is a bullet item like "• C#: Good fit..." or "- C#: ..."
-            else if (line.StartsWith("•") || line.StartsWith("-") || line.StartsWith("*"))
+            if (line.StartsWith("Overall Assessment", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("Overall", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("Verdict", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("Final Recommendation", StringComparison.OrdinalIgnoreCase))
             {
-                var content = line.TrimStart('•', '-', '*', ' ').Trim();
-                bool isGoodFit = content.Contains("Good fit", StringComparison.OrdinalIgnoreCase) ||
-                                 content.Contains("Strong fit", StringComparison.OrdinalIgnoreCase) ||
-                                 content.Contains("Fit —", StringComparison.OrdinalIgnoreCase) ||
-                                 content.Contains("Verified", StringComparison.OrdinalIgnoreCase);
-
-                string accentColor = isGoodFit ? "#10b981" : "#ef4444";
-
-                var colonIndex = content.IndexOf(':');
-                string formattedContent = content;
-                if (colonIndex > 0)
-                {
-                    string skillName = content.Substring(0, colonIndex).Trim();
-                    string rest = content.Substring(colonIndex + 1).Trim();
-                    formattedContent = $"<strong>{skillName}:</strong> {rest}";
-                }
-
-                sb.Append("<div style=\"padding: 5px 8px 5px 10px; border-left: 3px solid ")
-                  .Append(accentColor)
-                  .Append("; background: #ffffff; border: 1px solid #e2e8f0; border-left-width: 3px; border-radius: 4px; margin-bottom: 5px; font-size: 12px; line-height: 1.4;\">")
-                  .Append(formattedContent)
-                  .Append("</div>");
+                currentSection = 5;
+                overallLines.Add(line);
+                continue;
             }
-            // Check if line is overall assessment or summary
-            else if (line.StartsWith("Overall", StringComparison.OrdinalIgnoreCase) ||
-                     line.StartsWith("Assessment", StringComparison.OrdinalIgnoreCase) ||
-                     line.StartsWith("Summary", StringComparison.OrdinalIgnoreCase) ||
-                     line.StartsWith("Verdict", StringComparison.OrdinalIgnoreCase))
+
+            switch (currentSection)
             {
-                sb.Append("<div style=\"margin-top: 8px; padding-top: 6px; border-top: 1px solid #e2e8f0; color: #334155; font-size: 12px; line-height: 1.45;\">")
-                  .Append("<strong>").Append(line).Append("</strong>")
-                  .Append("</div>");
+                case 1:
+                    noticeLines.Add(line);
+                    break;
+                case 2:
+                    currentCompanyLines.Add(line);
+                    break;
+                case 3:
+                    stabilityLines.Add(line);
+                    break;
+                case 4:
+                    skillLines.Add(line);
+                    break;
+                case 5:
+                    overallLines.Add(line);
+                    break;
+                default:
+                    if (line.StartsWith("•") || line.StartsWith("-") || line.StartsWith("*"))
+                    {
+                        skillLines.Add(line);
+                    }
+                    else
+                    {
+                        otherLines.Add(line);
+                    }
+                    break;
+            }
+        }
+
+        var sb = new StringBuilder();
+
+        // =========================================================================
+        // CARD 1: CRUCIAL FACTOR · NOTICE PERIOD & RELIEVED DATE
+        // =========================================================================
+        string cat = noticePeriodCategory ?? "";
+        if (string.IsNullOrWhiteSpace(cat))
+        {
+            var catLine = noticeLines.FirstOrDefault(l => l.Contains("Category:", StringComparison.OrdinalIgnoreCase));
+            if (catLine != null)
+            {
+                cat = catLine.Substring(catLine.IndexOf(':') + 1).Trim();
             }
             else
             {
-                sb.Append("<p style=\"margin: 4px 0; line-height: 1.45; font-size: 12px;\">").Append(line).Append("</p>");
+                var allNoticeText = string.Join(" ", noticeLines);
+                if (allNoticeText.Contains("Immediate", StringComparison.OrdinalIgnoreCase)) cat = "Immediate Joiner";
+                else if (allNoticeText.Contains("Short", StringComparison.OrdinalIgnoreCase)) cat = "Short Notice Period";
+                else if (allNoticeText.Contains("Long", StringComparison.OrdinalIgnoreCase)) cat = "Long Notice Period";
+                else cat = "Not Specified";
             }
+        }
+
+        bool isImmediate = cat.Contains("Immediate", StringComparison.OrdinalIgnoreCase);
+        bool isShort = cat.Contains("Short", StringComparison.OrdinalIgnoreCase) || cat.Contains("30", StringComparison.OrdinalIgnoreCase);
+        bool isLong = cat.Contains("Long", StringComparison.OrdinalIgnoreCase) || cat.Contains("60", StringComparison.OrdinalIgnoreCase) || cat.Contains("90", StringComparison.OrdinalIgnoreCase);
+
+        string borderColor = isImmediate ? "#86efac" : isShort ? "#fde68a" : isLong ? "#fca5a5" : "#cbd5e1";
+        string bgColor = isImmediate ? "#f0fdf4" : isShort ? "#fffbeb" : isLong ? "#fef2f2" : "#f8fafc";
+        string badgeBg = isImmediate ? "#166534" : isShort ? "#b45309" : isLong ? "#991b1b" : "#475569";
+        string badgeText = isImmediate ? "⚡ Immediate Joiner" : isShort ? "⏱️ Short Notice (15-30d)" : isLong ? "⚠️ Long Notice (60-90d+)" : "ℹ️ Notice Not Specified";
+
+        sb.Append("<div style=\"margin-bottom: 12px; padding: 10px 14px; border-radius: 8px; border: 1px solid ")
+          .Append(borderColor)
+          .Append("; background: ")
+          .Append(bgColor)
+          .Append("; display: flex; flex-direction: column; gap: 5px;\">");
+
+        sb.Append("<div style=\"display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;\">")
+          .Append("<span style=\"font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: ")
+          .Append(badgeBg)
+          .Append(";\">CRUCIAL FACTOR · NOTICE & RELIEVED DATE</span>")
+          .Append("<span style=\"font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 9999px; background: ")
+          .Append(badgeBg)
+          .Append("; color: #ffffff;\">")
+          .Append(badgeText)
+          .Append("</span></div>");
+
+        if (noticeLines.Count > 0)
+        {
+            foreach (var nl in noticeLines)
+            {
+                var cleanNl = nl.TrimStart('•', '-', '*', ' ').Trim();
+                var colonIdx = cleanNl.IndexOf(':');
+                string formattedNl;
+                if (colonIdx > 0)
+                {
+                    string label = cleanNl.Substring(0, colonIdx).Trim();
+                    string val = cleanNl.Substring(colonIdx + 1).Trim();
+                    formattedNl = $"<strong>{label}:</strong> {val}";
+                }
+                else
+                {
+                    formattedNl = cleanNl;
+                }
+
+                sb.Append("<div style=\"font-size: 12px; color: #1e293b; line-height: 1.45;\">")
+                  .Append(formattedNl)
+                  .Append("</div>");
+            }
+        }
+        else
+        {
+            string rel = !string.IsNullOrWhiteSpace(relievedDate) ? relievedDate : "Relieved status assessed from profile history";
+            sb.Append("<div style=\"font-size: 12px; color: #1e293b; line-height: 1.45;\"><strong>Relieved Date / LWD:</strong> ")
+              .Append(rel)
+              .Append("</div>")
+              .Append("<div style=\"font-size: 12px; color: #1e293b; line-height: 1.45;\"><strong>Category:</strong> ")
+              .Append(cat)
+              .Append("</div>");
+        }
+
+        sb.Append("</div>");
+
+        // =========================================================================
+        // CARD 2: CRITICAL FACTOR · HANDS-ON EXPERIENCE IN CURRENT COMPANY
+        // =========================================================================
+        sb.Append("<div style=\"margin-bottom: 12px; padding: 10px 14px; border-radius: 8px; border: 1px solid #bfdbfe; background: #eff6ff; display: flex; flex-direction: column; gap: 5px;\">");
+        sb.Append("<div style=\"display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;\">")
+          .Append("<span style=\"font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #1e40af;\">CRITICAL FACTOR · CURRENT COMPANY HANDS-ON EXPERIENCE</span>")
+          .Append("<span style=\"font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; background: #2563eb; color: #ffffff;\">Active in Current Role</span></div>");
+
+        if (currentCompanyLines.Count > 0)
+        {
+            foreach (var cl in currentCompanyLines)
+            {
+                var cleanCl = cl.TrimStart('•', '-', '*', ' ').Trim();
+                var colonIdx = cleanCl.IndexOf(':');
+                string formattedCl;
+                if (colonIdx > 0)
+                {
+                    string label = cleanCl.Substring(0, colonIdx).Trim();
+                    string val = cleanCl.Substring(colonIdx + 1).Trim();
+                    if (label.Contains("Tech", StringComparison.OrdinalIgnoreCase) || label.Contains("Stack", StringComparison.OrdinalIgnoreCase))
+                    {
+                        formattedCl = $"<strong style=\"color: #1e40af;\">{label}:</strong> <span style=\"font-weight: 600; color: #1d4ed8;\">{val}</span>";
+                    }
+                    else
+                    {
+                        formattedCl = $"<strong>{label}:</strong> {val}";
+                    }
+                }
+                else
+                {
+                    formattedCl = cleanCl;
+                }
+
+                sb.Append("<div style=\"font-size: 12px; color: #1e293b; line-height: 1.45;\">")
+                  .Append(formattedCl)
+                  .Append("</div>");
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(currentCompanyHandsOn))
+        {
+            sb.Append("<div style=\"font-size: 12px; color: #1e293b; line-height: 1.45;\"><strong style=\"color: #1e40af;\">Active Hands-On Tech Stack:</strong> <span style=\"font-weight: 600; color: #1d4ed8;\">")
+              .Append(currentCompanyHandsOn)
+              .Append("</span></div>");
+        }
+        else
+        {
+            sb.Append("<div style=\"font-size: 12px; color: #1e293b; line-height: 1.45;\">Candidate's current company experience and hands-on deliverables evaluated against target job.</div>");
+        }
+
+        sb.Append("</div>");
+
+        // =========================================================================
+        // CARD 3: CAREER STABILITY & SWITCH ANALYSIS (PREFERENCE FACTOR)
+        // =========================================================================
+        string stabilityText = "Stability Assessed";
+        string stabilityPillBg = "#0f172a";
+        var allStab = string.Join(" ", stabilityLines);
+        if (allStab.Contains("High Stability", StringComparison.OrdinalIgnoreCase) || allStab.Contains("Preferred", StringComparison.OrdinalIgnoreCase))
+        {
+            stabilityText = "Preferred: High Stability";
+            stabilityPillBg = "#166534";
+        }
+        else if (allStab.Contains("Frequent", StringComparison.OrdinalIgnoreCase) || allStab.Contains("Hopper", StringComparison.OrdinalIgnoreCase) || allStab.Contains("Risk", StringComparison.OrdinalIgnoreCase))
+        {
+            stabilityText = "Caution: Frequent Switches";
+            stabilityPillBg = "#991b1b";
+        }
+        else if (allStab.Contains("Moderate", StringComparison.OrdinalIgnoreCase))
+        {
+            stabilityText = "Moderate Stability";
+            stabilityPillBg = "#334155";
+        }
+
+        sb.Append("<div style=\"margin-bottom: 12px; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; display: flex; flex-direction: column; gap: 5px;\">");
+        sb.Append("<div style=\"display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;\">")
+          .Append("<span style=\"font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #334155;\">CAREER STABILITY & SWITCH ANALYSIS</span>")
+          .Append("<span style=\"font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; background: ")
+          .Append(stabilityPillBg)
+          .Append("; color: #ffffff;\">")
+          .Append(stabilityText)
+          .Append("</span></div>");
+
+        if (stabilityLines.Count > 0)
+        {
+            foreach (var sl in stabilityLines)
+            {
+                var cleanSl = sl.TrimStart('•', '-', '*', ' ').Trim();
+                var colonIdx = cleanSl.IndexOf(':');
+                string formattedSl;
+                if (colonIdx > 0)
+                {
+                    string label = cleanSl.Substring(0, colonIdx).Trim();
+                    string val = cleanSl.Substring(colonIdx + 1).Trim();
+                    formattedSl = $"<strong>{label}:</strong> {val}";
+                }
+                else
+                {
+                    formattedSl = cleanSl;
+                }
+
+                sb.Append("<div style=\"font-size: 12px; color: #334155; line-height: 1.45;\">")
+                  .Append(formattedSl)
+                  .Append("</div>");
+            }
+        }
+        else if (totalSwitches.HasValue)
+        {
+            sb.Append("<div style=\"font-size: 12px; color: #334155; line-height: 1.45;\"><strong>Total Switches:</strong> ")
+              .Append(totalSwitches.Value)
+              .Append(" switches identified across employment history.</div>");
+        }
+        else
+        {
+            sb.Append("<div style=\"font-size: 12px; color: #334155; line-height: 1.45;\">Career progression and company switch history verified.</div>");
+        }
+
+        sb.Append("</div>");
+
+        // =========================================================================
+        // CARD 4: MANDATORY SKILLS EVALUATION
+        // =========================================================================
+        sb.Append("<div style=\"font-weight: 700; margin: 12px 0 6px 0; color: #0f172a; font-size: 13px;\">Mandatory Skills Evaluation:</div>");
+
+        foreach (var sk in skillLines)
+        {
+            var content = sk.TrimStart('•', '-', '*', ' ').Trim();
+            bool isGoodFit = content.Contains("Good fit", StringComparison.OrdinalIgnoreCase) ||
+                             content.Contains("Strong fit", StringComparison.OrdinalIgnoreCase) ||
+                             content.Contains("Fit —", StringComparison.OrdinalIgnoreCase) ||
+                             content.Contains("Verified", StringComparison.OrdinalIgnoreCase);
+
+            string accentColor = isGoodFit ? "#10b981" : "#ef4444";
+
+            var colonIndex = content.IndexOf(':');
+            string formattedContent = content;
+            if (colonIndex > 0)
+            {
+                string skillName = content.Substring(0, colonIndex).Trim();
+                string rest = content.Substring(colonIndex + 1).Trim();
+                formattedContent = $"<strong>{skillName}:</strong> {rest}";
+            }
+
+            sb.Append("<div style=\"padding: 5px 8px 5px 10px; border-left: 3px solid ")
+              .Append(accentColor)
+              .Append("; background: #ffffff; border: 1px solid #e2e8f0; border-left-width: 3px; border-radius: 4px; margin-bottom: 5px; font-size: 12px; line-height: 1.4;\">")
+              .Append(formattedContent)
+              .Append("</div>");
+        }
+
+        // =========================================================================
+        // CARD 5: OTHER LINES & OVERALL ASSESSMENT
+        // =========================================================================
+        if (otherLines.Count > 0)
+        {
+            foreach (var ol in otherLines)
+            {
+                sb.Append("<p style=\"margin: 4px 0; line-height: 1.45; font-size: 12px;\">").Append(ol).Append("</p>");
+            }
+        }
+
+        if (overallLines.Count > 0)
+        {
+            sb.Append("<div style=\"margin-top: 10px; padding-top: 8px; border-top: 1px solid #e2e8f0; color: #1e293b; font-size: 12px; line-height: 1.45;\">");
+            foreach (var ov in overallLines)
+            {
+                sb.Append("<p style=\"margin: 2px 0;\"><strong>").Append(ov).Append("</strong></p>");
+            }
+            sb.Append("</div>");
         }
 
         return sb.Length > 0 ? sb.ToString() : rawSummary;
