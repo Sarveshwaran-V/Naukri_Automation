@@ -309,38 +309,42 @@ public class GeminiService : IGeminiService
             Determine whether the candidate has ACTUALLY USED the required technologies in real production projects throughout their career, or whether they simply listed them as superficial keywords.
 
             Auditing Rules:
-            1. Mandatory Skills Justification (CRITICAL MANDATORY REQUIREMENT):
-               - YOU MUST EVALUATE EVERY SINGLE MANDATORY SKILL LISTED IN targetJob.mandatorySkills.
-               - For EACH mandatory skill, provide an explicit, short, and concise explanation justifying:
-                 * WHY the candidate is good at it (e.g. hands-on production use, specific companies/projects, duration, concrete deliverables from work history or attached CV).
-                 * OR WHY the candidate is NOT fit in that skill (e.g. only listed in skill tags without project context, no evidence of practical usage in employment history/resume, or only academic/basic). Keep the non-fit explanation concise without going overly in-depth.
-               - This mandatory skill justification MUST appear in TWO places:
-                 a) AT THE VERY BEGINNING OF executiveSummary: Start executiveSummary with a structured breakdown for all mandatory skills:
-                    "Mandatory Skills Evaluation:
-                    • [Skill 1]: [Concise justification why candidate is good or not fit]
-                    • [Skill 2]: [Concise justification why candidate is good or not fit]
-                    ...
-                    Overall Assessment: [1-2 sentences on overall role fit against job description]."
-                 b) IN techAudits ARRAY: Every mandatory skill MUST be the first items in the techAudits array with technology, actuallyUsedInCareer (true if good/fit, false if not fit), depthLevel, and careerEvidence containing the concise justification.
+            1. Executive Summary & HR Fit Verdict (CRITICAL FOR HR RECRUITERS):
+               - Write a CONCISE, 2 TO 3-LINE summary of the candidate's profile and overall fit verdict for the target role.
+               - Keep it high-level, clear, and direct so a non-technical HR recruiter immediately knows whether the candidate is fit or not.
+               - DO NOT list out each individual skill breakdown in executiveSummary (the detailed skill breakdown is displayed right below in the Technology & Skill Verification section).
+               - SKILL HIGHLIGHTING REQUIREMENT:
+                 Whenever you mention a specific skill or technology name in the executiveSummary:
+                 * If the candidate is STRONG / verified in that skill, format it as: <span style="color: #166534; font-weight: 600; background: #dcfce7; padding: 1px 5px; border-radius: 3px;">SkillName</span>
+                 * If the candidate is NOT STRONG / weak / missing in that skill, format it as: <span style="color: #991b1b; font-weight: 600; background: #fee2e2; padding: 1px 5px; border-radius: 3px;">SkillName</span>
+               - Example executiveSummary:
+                 "Candidate brings 6+ years of backend development experience with strong verified hands-on depth in <span style=\"color: #166534; font-weight: 600; background: #dcfce7; padding: 1px 5px; border-radius: 3px;\">C#</span> and <span style=\"color: #166534; font-weight: 600; background: #dcfce7; padding: 1px 5px; border-radius: 3px;\">.NET Core</span> microservices. However, they lack hands-on production exposure to <span style=\"color: #991b1b; font-weight: 600; background: #fee2e2; padding: 1px 5px; border-radius: 3px;\">Docker</span> and cloud deployments required for this role. Recommended to proceed with caution to evaluate containerization proficiency during technical rounds."
+
+            2. Technology & Skill Verification (techAudits ARRAY):
+               - YOU MUST EVALUATE EVERY SINGLE MANDATORY SKILL LISTED IN targetJob.mandatorySkills as the first entries in techAudits.
+               - For EACH mandatory skill, assign:
+                 * actuallyUsedInCareer: true if they have authentic production/project experience; false if keyword stuffed, weak, or absent.
+                 * depthLevel: "Primary / Production" (core day-to-day tool), "Secondary / Ancillary" (occasional usage), or "Keyword Stuffed / Not Evident".
+                 * careerEvidence: A short, concise explanation justifying WHY the candidate is good at it (e.g. 5+ yrs building REST APIs at X) OR WHY they are not fit (e.g. only listed in skill tags without project context).
                - Weighting: If ANY mandatory skill lacks authentic project evidence or is not fit, heavily penalize the score (cap at 55% or lower) and recommend "BORDERLINE / INTERVIEW WITH CAUTION" or "DO NOT PROCEED".
 
-            2. Preferred Skills (Secondary Priority - 20% Weight):
+            3. Preferred Skills (Secondary Priority - 20% Weight):
                - Check for preferred/secondary skills. Evidence acts as a positive booster.
                - Do not heavily penalize or reject if preferred skills are missing, as long as all mandatory skills are satisfied.
 
-            3. Career Continuity & Seniority:
+            4. Career Continuity & Seniority:
                - Evaluate total tenure, career progression, stability, and whether their seniority matches the role title.
 
-            4. Knockout Parameters & Anti-Hallucination:
+            5. Knockout Parameters & Anti-Hallucination:
                - If the candidate's notice period is "Not specified", empty, or unknown, explicitly state "Notice period: Not specified" and do NOT invent or assume any notice period days.
                - If an explicit notice period is given, evaluate against MaxNoticePeriodDays.
 
-            5. Final Verdict Recommendation (Must be one of):
+            6. Final Verdict Recommendation (Must be one of):
                - "WORTH GOING FORWARD": Strong evidence of authentic hands-on usage of all mandatory skills, within acceptable notice period, solid impact.
                - "BORDERLINE / INTERVIEW WITH CAUTION": Partial hands-on depth in mandatory skills, or border notice period, or missing 1 mandatory skill in actual projects.
                - "DO NOT PROCEED": Core mandatory tech is keyword stuffed without real project evidence, or knockout violation.
 
-            6. Targeted HR Interview Questions & Answers (EXACTLY 5 Questions):
+            7. Targeted HR Interview Questions & Answers (EXACTLY 5 Questions):
                Generate exactly 5 tailored interview questions based directly on the candidate's actual projects, claims, and technologies from their resume.
                IMPORTANT: The HR interviewer who will ask these questions is NOT a technical person. Therefore:
                - For each question, provide an "expectedAnswer" written in clear, plain English (2-3 sentences) so the non-technical HR recruiter can understand what a solid, knowledgeable response sounds like.
@@ -358,7 +362,7 @@ public class GeminiService : IGeminiService
               "candidateName": "string",
               "overallSuitabilityScore": 85,
               "recommendation": "WORTH GOING FORWARD",
-              "executiveSummary": "Mandatory Skills Evaluation:\n• C#: Good fit — 5+ years building production REST APIs and enterprise services at Company A and B.\n• .NET Core: Good fit — architected microservices using .NET 8/9 with Docker.\n• SQL: Good fit — hands-on database optimization and complex queries.\n\nOverall Assessment: Candidate demonstrates strong hands-on seniority matching the Senior .NET Engineer role requirements.",
+              "executiveSummary": "Candidate brings 6+ years of backend development experience with strong verified hands-on depth in <span style=\"color: #166534; font-weight: 600; background: #dcfce7; padding: 1px 5px; border-radius: 3px;\">C#</span> and <span style=\"color: #166534; font-weight: 600; background: #dcfce7; padding: 1px 5px; border-radius: 3px;\">.NET Core</span> microservices. However, they lack hands-on production exposure to <span style=\"color: #991b1b; font-weight: 600; background: #fee2e2; padding: 1px 5px; border-radius: 3px;\">Docker</span> and cloud deployments required for this role. Recommended to proceed with caution to evaluate containerization proficiency during technical rounds.",
               "techAudits": [
                 {
                   "technology": "C#",
@@ -496,7 +500,7 @@ public class GeminiService : IGeminiService
                                 {
                                     CandidateId = string.IsNullOrWhiteSpace(result.CandidateId) ? profile.CandidateId : result.CandidateId,
                                     CandidateName = string.IsNullOrWhiteSpace(result.CandidateName) ? profile.FullName : result.CandidateName,
-                                    ExecutiveSummary = FormatExecutiveSummaryHtml(result.ExecutiveSummary)
+                                    ExecutiveSummary = FormatExecutiveSummaryHtml(result.ExecutiveSummary, result.TechAudits)
                                 };
                             }
                         }
@@ -528,8 +532,6 @@ public class GeminiService : IGeminiService
         string candidateName = root.TryGetProperty("candidateName", out var nameProp) ? (nameProp.GetString() ?? profile.FullName) : profile.FullName;
         int score = root.TryGetProperty("overallSuitabilityScore", out var sProp) ? (sProp.GetInt32()) : 65;
         string rec = root.TryGetProperty("recommendation", out var recProp) ? (recProp.GetString() ?? "BORDERLINE / INTERVIEW WITH CAUTION") : "BORDERLINE / INTERVIEW WITH CAUTION";
-        string summary = root.TryGetProperty("executiveSummary", out var sumProp) ? (sumProp.GetString() ?? "Candidate profile analyzed against target role.") : "Candidate profile analyzed against target role.";
-        summary = FormatExecutiveSummaryHtml(summary);
 
         var techAudits = new List<TechUsageAudit>();
         if (root.TryGetProperty("techAudits", out var techArray) && techArray.ValueKind == JsonValueKind.Array)
@@ -546,6 +548,9 @@ public class GeminiService : IGeminiService
                 }
             }
         }
+
+        string summary = root.TryGetProperty("executiveSummary", out var sumProp) ? (sumProp.GetString() ?? "Candidate profile analyzed against target role.") : "Candidate profile analyzed against target role.";
+        summary = FormatExecutiveSummaryHtml(summary, techAudits);
 
         var strengths = new List<string>();
         if (root.TryGetProperty("strengths", out var strArray) && strArray.ValueKind == JsonValueKind.Array)
@@ -636,77 +641,78 @@ public class GeminiService : IGeminiService
         throw new NotImplementedException("LinkedIn Recruiter backend pipeline is pending deployment. Implement prompt logic in AnalyzeLinkedInProfileAsync in GeminiService.cs.");
     }
 
-    private static string FormatExecutiveSummaryHtml(string rawSummary)
+    private static string FormatExecutiveSummaryHtml(string rawSummary, IReadOnlyList<TechUsageAudit>? techAudits = null)
     {
         if (string.IsNullOrWhiteSpace(rawSummary))
-            return "<p>Profile evaluated against target job description.</p>";
+            return "<p style=\"margin: 0; line-height: 1.55; font-size: 13px; color: #1e293b;\">Profile evaluated against target job description.</p>";
 
         var trimmed = rawSummary.Trim();
-        // If it already has clean HTML tags like <div>, <p>, or <ul>, return trimmed
-        if (trimmed.Contains("<div") || trimmed.Contains("<p") || trimmed.Contains("<ul") || trimmed.Contains("<li"))
+
+        // If the summary begins with legacy bullet-points / "Mandatory Skills Evaluation:", extract the overall narrative
+        if (trimmed.Contains("Mandatory Skills Evaluation:", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Contains("Skills Breakdown:", StringComparison.OrdinalIgnoreCase))
         {
-            return trimmed;
+            var matchAssessment = Regex.Match(trimmed, @"Overall Assessment:\s*(.+)", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+            if (matchAssessment.Success && !string.IsNullOrWhiteSpace(matchAssessment.Groups[1].Value))
+            {
+                trimmed = matchAssessment.Groups[1].Value.Trim();
+            }
         }
 
-        var lines = trimmed.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
-        var sb = new StringBuilder();
+        // Convert any markdown bold **text** to <strong>text</strong>
+        trimmed = Regex.Replace(trimmed, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
 
-        foreach (var rawLine in lines)
+        // Clean up any stray bullet characters or list prefixes
+        trimmed = Regex.Replace(trimmed, @"^[\s•\-\*]+", "", RegexOptions.Multiline);
+
+        // Flatten multi-line paragraphs into a clean narrative
+        var lines = trimmed.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries)
+                           .Select(l => l.Trim())
+                           .Where(l => !string.IsNullOrWhiteSpace(l));
+        string narrative = string.Join(" ", lines);
+
+        // Highlight skills based on techAudits verification (green if authentic, red if missing/not fit)
+        if (techAudits != null && techAudits.Count > 0)
         {
-            var line = rawLine.Trim();
-            if (string.IsNullOrWhiteSpace(line)) continue;
+            // Order skills by length descending to match composite names (e.g. ".NET Core" before "Core") first
+            var orderedSkills = techAudits
+                .Where(t => !string.IsNullOrWhiteSpace(t.Technology))
+                .OrderByDescending(t => t.Technology.Length)
+                .ToList();
 
-            // Check if line is a section header like "Mandatory Skills Evaluation:"
-            if (line.StartsWith("Mandatory Skills", StringComparison.OrdinalIgnoreCase) ||
-                line.StartsWith("Skills Evaluation", StringComparison.OrdinalIgnoreCase) ||
-                line.StartsWith("Skills Breakdown", StringComparison.OrdinalIgnoreCase))
+            foreach (var audit in orderedSkills)
             {
-                sb.Append("<div style=\"font-weight: 700; margin-bottom: 6px; color: #0f172a; font-size: 13px;\">")
-                  .Append(line)
-                  .Append("</div>");
-            }
-            // Check if line is a bullet item like "• C#: Good fit..." or "- C#: ..."
-            else if (line.StartsWith("•") || line.StartsWith("-") || line.StartsWith("*"))
-            {
-                var content = line.TrimStart('•', '-', '*', ' ').Trim();
-                bool isGoodFit = content.Contains("Good fit", StringComparison.OrdinalIgnoreCase) ||
-                                 content.Contains("Strong fit", StringComparison.OrdinalIgnoreCase) ||
-                                 content.Contains("Fit —", StringComparison.OrdinalIgnoreCase) ||
-                                 content.Contains("Verified", StringComparison.OrdinalIgnoreCase);
+                string skill = audit.Technology.Trim();
+                if (skill.Length < 2) continue;
 
-                string accentColor = isGoodFit ? "#10b981" : "#ef4444";
+                // Check if this skill is already styled inside a span tag
+                bool alreadyStyled = Regex.IsMatch(narrative, @"<span[^>]*>[^<]*" + Regex.Escape(skill) + @"[^<]*</span>", RegexOptions.IgnoreCase);
+                if (alreadyStyled) continue;
 
-                var colonIndex = content.IndexOf(':');
-                string formattedContent = content;
-                if (colonIndex > 0)
+                string color = audit.ActuallyUsedInCareer ? "#166534" : "#991b1b";
+                string bg = audit.ActuallyUsedInCareer ? "#dcfce7" : "#fee2e2";
+                string border = audit.ActuallyUsedInCareer ? "#bbf7d0" : "#fecaca";
+
+                // Regex matches the skill outside of HTML tags, with boundary matching for symbols like C#, C++, .NET
+                string pattern = @"(<[^>]+>)|((?<![\w#\+])" + Regex.Escape(skill) + @"(?![\w#\+]))";
+                narrative = Regex.Replace(narrative, pattern, m =>
                 {
-                    string skillName = content.Substring(0, colonIndex).Trim();
-                    string rest = content.Substring(colonIndex + 1).Trim();
-                    formattedContent = $"<strong>{skillName}:</strong> {rest}";
-                }
-
-                sb.Append("<div style=\"padding: 5px 8px 5px 10px; border-left: 3px solid ")
-                  .Append(accentColor)
-                  .Append("; background: #ffffff; border: 1px solid #e2e8f0; border-left-width: 3px; border-radius: 4px; margin-bottom: 5px; font-size: 12px; line-height: 1.4;\">")
-                  .Append(formattedContent)
-                  .Append("</div>");
-            }
-            // Check if line is overall assessment or summary
-            else if (line.StartsWith("Overall", StringComparison.OrdinalIgnoreCase) ||
-                     line.StartsWith("Assessment", StringComparison.OrdinalIgnoreCase) ||
-                     line.StartsWith("Summary", StringComparison.OrdinalIgnoreCase) ||
-                     line.StartsWith("Verdict", StringComparison.OrdinalIgnoreCase))
-            {
-                sb.Append("<div style=\"margin-top: 8px; padding-top: 6px; border-top: 1px solid #e2e8f0; color: #334155; font-size: 12px; line-height: 1.45;\">")
-                  .Append("<strong>").Append(line).Append("</strong>")
-                  .Append("</div>");
-            }
-            else
-            {
-                sb.Append("<p style=\"margin: 4px 0; line-height: 1.45; font-size: 12px;\">").Append(line).Append("</p>");
+                    if (m.Groups[1].Success)
+                    {
+                        return m.Groups[1].Value; // Return HTML tag intact
+                    }
+                    return $"<span style=\"color: {color}; background: {bg}; border: 1px solid {border}; font-weight: 600; padding: 1px 5px; border-radius: 3px;\">{m.Groups[2].Value}</span>";
+                }, RegexOptions.IgnoreCase);
             }
         }
 
-        return sb.Length > 0 ? sb.ToString() : rawSummary;
+        // Ensure wrapped in a clean, legible paragraph container
+        if (!narrative.StartsWith("<p", StringComparison.OrdinalIgnoreCase) &&
+            !narrative.StartsWith("<div", StringComparison.OrdinalIgnoreCase))
+        {
+            narrative = $"<p style=\"margin: 0; line-height: 1.55; font-size: 13px; color: #1e293b;\">{narrative}</p>";
+        }
+
+        return narrative;
     }
 }
