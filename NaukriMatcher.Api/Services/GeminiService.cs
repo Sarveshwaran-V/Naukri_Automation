@@ -309,23 +309,38 @@ public class GeminiService : IGeminiService
             Determine whether the candidate has ACTUALLY USED the required technologies in real production projects throughout their career, or whether they simply listed them as superficial keywords.
 
             Auditing Rules:
-            1. Skills Priority & Career Authenticity:
-               - MANDATORY SKILLS (CRITICAL PRIORITY - 80% Weight):
-                 * For each mandatory skill: Search employment history, project descriptions, and the full attached CV text in fullRawProfileText.
-                 * If ANY core mandatory skill lacks authentic project evidence (is merely keyword-stuffed in tags), heavily penalize the candidate: cap the suitability score at 55% or below and classify as "BORDERLINE / INTERVIEW WITH CAUTION" or "DO NOT PROCEED".
-               - PREFERRED SKILLS (SECONDARY PRIORITY - 20% Weight):
-                 * Check for preferred/secondary skills. Evidence of hands-on use acts as a positive booster.
-                 * If preferred skills are missing or keyword-only, DO NOT reject or severely penalize the candidate as long as all mandatory skills are authentically satisfied.
-            2. Career Continuity & Seniority:
+            1. Mandatory Skills Justification (CRITICAL MANDATORY REQUIREMENT):
+               - YOU MUST EVALUATE EVERY SINGLE MANDATORY SKILL LISTED IN targetJob.mandatorySkills.
+               - For EACH mandatory skill, provide an explicit, short, and concise explanation justifying:
+                 * WHY the candidate is good at it (e.g. hands-on production use, specific companies/projects, duration, concrete deliverables from work history or attached CV).
+                 * OR WHY the candidate is NOT fit in that skill (e.g. only listed in skill tags without project context, no evidence of practical usage in employment history/resume, or only academic/basic). Keep the non-fit explanation concise without going overly in-depth.
+               - This mandatory skill justification MUST appear in TWO places:
+                 a) AT THE VERY BEGINNING OF executiveSummary: Start executiveSummary with a structured breakdown for all mandatory skills:
+                    "Mandatory Skills Evaluation:
+                    • [Skill 1]: [Concise justification why candidate is good or not fit]
+                    • [Skill 2]: [Concise justification why candidate is good or not fit]
+                    ...
+                    Overall Assessment: [1-2 sentences on overall role fit against job description]."
+                 b) IN techAudits ARRAY: Every mandatory skill MUST be the first items in the techAudits array with technology, actuallyUsedInCareer (true if good/fit, false if not fit), depthLevel, and careerEvidence containing the concise justification.
+               - Weighting: If ANY mandatory skill lacks authentic project evidence or is not fit, heavily penalize the score (cap at 55% or lower) and recommend "BORDERLINE / INTERVIEW WITH CAUTION" or "DO NOT PROCEED".
+
+            2. Preferred Skills (Secondary Priority - 20% Weight):
+               - Check for preferred/secondary skills. Evidence acts as a positive booster.
+               - Do not heavily penalize or reject if preferred skills are missing, as long as all mandatory skills are satisfied.
+
+            3. Career Continuity & Seniority:
                - Evaluate total tenure, career progression, stability, and whether their seniority matches the role title.
-            3. Knockout Parameters & Anti-Hallucination:
+
+            4. Knockout Parameters & Anti-Hallucination:
                - If the candidate's notice period is "Not specified", empty, or unknown, explicitly state "Notice period: Not specified" and do NOT invent or assume any notice period days.
                - If an explicit notice period is given, evaluate against MaxNoticePeriodDays.
-            4. Final Verdict Recommendation (Must be one of):
-               - "WORTH GOING FORWARD": Strong evidence of authentic hands-on usage of mandatory tech, within acceptable notice period, solid impact.
-               - "BORDERLINE / INTERVIEW WITH CAUTION": Partial hands-on depth, or border notice period, or missing 1 mandatory skill in actual projects.
-               - "DO NOT PROCEED": Core required tech is keyword stuffed without real project evidence, or severe knockout violation.
-            5. Targeted HR Interview Questions & Answers (EXACTLY 5 Questions):
+
+            5. Final Verdict Recommendation (Must be one of):
+               - "WORTH GOING FORWARD": Strong evidence of authentic hands-on usage of all mandatory skills, within acceptable notice period, solid impact.
+               - "BORDERLINE / INTERVIEW WITH CAUTION": Partial hands-on depth in mandatory skills, or border notice period, or missing 1 mandatory skill in actual projects.
+               - "DO NOT PROCEED": Core mandatory tech is keyword stuffed without real project evidence, or knockout violation.
+
+            6. Targeted HR Interview Questions & Answers (EXACTLY 5 Questions):
                Generate exactly 5 tailored interview questions based directly on the candidate's actual projects, claims, and technologies from their resume.
                IMPORTANT: The HR interviewer who will ask these questions is NOT a technical person. Therefore:
                - For each question, provide an "expectedAnswer" written in clear, plain English (2-3 sentences) so the non-technical HR recruiter can understand what a solid, knowledgeable response sounds like.
@@ -343,13 +358,19 @@ public class GeminiService : IGeminiService
               "candidateName": "string",
               "overallSuitabilityScore": 85,
               "recommendation": "WORTH GOING FORWARD",
-              "executiveSummary": "2-3 sentences summarizing whether they truly possess the required skills and if they are worth speaking to.",
+              "executiveSummary": "Mandatory Skills Evaluation:\n• C#: Good fit — 5+ years building production REST APIs and enterprise services at Company A and B.\n• .NET Core: Good fit — architected microservices using .NET 8/9 with Docker.\n• SQL: Good fit — hands-on database optimization and complex queries.\n\nOverall Assessment: Candidate demonstrates strong hands-on seniority matching the Senior .NET Engineer role requirements.",
               "techAudits": [
                 {
-                  "technology": "string",
+                  "technology": "C#",
                   "actuallyUsedInCareer": true,
-                  "careerEvidence": "Used across 2 companies (3.5 years) developing REST microservices.",
+                  "careerEvidence": "Hands-on production use for 5+ years across 2 companies building REST microservices.",
                   "depthLevel": "Primary / Production"
+                },
+                {
+                  "technology": "Docker",
+                  "actuallyUsedInCareer": false,
+                  "careerEvidence": "Listed in skills tags only; no direct containerization tasks or deliverables evident in project history.",
+                  "depthLevel": "Keyword Stuffed / Not Evident"
                 }
               ],
               "strengths": ["string", "string"],
