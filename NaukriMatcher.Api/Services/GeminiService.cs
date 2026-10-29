@@ -495,7 +495,8 @@ public class GeminiService : IGeminiService
                                 return result with
                                 {
                                     CandidateId = string.IsNullOrWhiteSpace(result.CandidateId) ? profile.CandidateId : result.CandidateId,
-                                    CandidateName = string.IsNullOrWhiteSpace(result.CandidateName) ? profile.FullName : result.CandidateName
+                                    CandidateName = string.IsNullOrWhiteSpace(result.CandidateName) ? profile.FullName : result.CandidateName,
+                                    ExecutiveSummary = FormatExecutiveSummaryHtml(result.ExecutiveSummary)
                                 };
                             }
                         }
@@ -528,6 +529,7 @@ public class GeminiService : IGeminiService
         int score = root.TryGetProperty("overallSuitabilityScore", out var sProp) ? (sProp.GetInt32()) : 65;
         string rec = root.TryGetProperty("recommendation", out var recProp) ? (recProp.GetString() ?? "BORDERLINE / INTERVIEW WITH CAUTION") : "BORDERLINE / INTERVIEW WITH CAUTION";
         string summary = root.TryGetProperty("executiveSummary", out var sumProp) ? (sumProp.GetString() ?? "Candidate profile analyzed against target role.") : "Candidate profile analyzed against target role.";
+        summary = FormatExecutiveSummaryHtml(summary);
 
         var techAudits = new List<TechUsageAudit>();
         if (root.TryGetProperty("techAudits", out var techArray) && techArray.ValueKind == JsonValueKind.Array)
@@ -632,5 +634,79 @@ public class GeminiService : IGeminiService
         // =========================================================================
 
         throw new NotImplementedException("LinkedIn Recruiter backend pipeline is pending deployment. Implement prompt logic in AnalyzeLinkedInProfileAsync in GeminiService.cs.");
+    }
+
+    private static string FormatExecutiveSummaryHtml(string rawSummary)
+    {
+        if (string.IsNullOrWhiteSpace(rawSummary))
+            return "<p>Profile evaluated against target job description.</p>";
+
+        var trimmed = rawSummary.Trim();
+        // If it already has clean HTML tags like <div>, <p>, or <ul>, return trimmed
+        if (trimmed.Contains("<div") || trimmed.Contains("<p") || trimmed.Contains("<ul") || trimmed.Contains("<li"))
+        {
+            return trimmed;
+        }
+
+        var lines = trimmed.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+        var sb = new StringBuilder();
+
+        foreach (var rawLine in lines)
+        {
+            var line = rawLine.Trim();
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            // Check if line is a section header like "Mandatory Skills Evaluation:"
+            if (line.StartsWith("Mandatory Skills", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("Skills Evaluation", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("Skills Breakdown", StringComparison.OrdinalIgnoreCase))
+            {
+                sb.Append("<div style=\"font-weight: 700; margin-bottom: 6px; color: #0f172a; font-size: 13px;\">")
+                  .Append(line)
+                  .Append("</div>");
+            }
+            // Check if line is a bullet item like "• C#: Good fit..." or "- C#: ..."
+            else if (line.StartsWith("•") || line.StartsWith("-") || line.StartsWith("*"))
+            {
+                var content = line.TrimStart('•', '-', '*', ' ').Trim();
+                bool isGoodFit = content.Contains("Good fit", StringComparison.OrdinalIgnoreCase) ||
+                                 content.Contains("Strong fit", StringComparison.OrdinalIgnoreCase) ||
+                                 content.Contains("Fit —", StringComparison.OrdinalIgnoreCase) ||
+                                 content.Contains("Verified", StringComparison.OrdinalIgnoreCase);
+
+                string accentColor = isGoodFit ? "#10b981" : "#ef4444";
+
+                var colonIndex = content.IndexOf(':');
+                string formattedContent = content;
+                if (colonIndex > 0)
+                {
+                    string skillName = content.Substring(0, colonIndex).Trim();
+                    string rest = content.Substring(colonIndex + 1).Trim();
+                    formattedContent = $"<strong>{skillName}:</strong> {rest}";
+                }
+
+                sb.Append("<div style=\"padding: 5px 8px 5px 10px; border-left: 3px solid ")
+                  .Append(accentColor)
+                  .Append("; background: #ffffff; border: 1px solid #e2e8f0; border-left-width: 3px; border-radius: 4px; margin-bottom: 5px; font-size: 12px; line-height: 1.4;\">")
+                  .Append(formattedContent)
+                  .Append("</div>");
+            }
+            // Check if line is overall assessment or summary
+            else if (line.StartsWith("Overall", StringComparison.OrdinalIgnoreCase) ||
+                     line.StartsWith("Assessment", StringComparison.OrdinalIgnoreCase) ||
+                     line.StartsWith("Summary", StringComparison.OrdinalIgnoreCase) ||
+                     line.StartsWith("Verdict", StringComparison.OrdinalIgnoreCase))
+            {
+                sb.Append("<div style=\"margin-top: 8px; padding-top: 6px; border-top: 1px solid #e2e8f0; color: #334155; font-size: 12px; line-height: 1.45;\">")
+                  .Append("<strong>").Append(line).Append("</strong>")
+                  .Append("</div>");
+            }
+            else
+            {
+                sb.Append("<p style=\"margin: 4px 0; line-height: 1.45; font-size: 12px;\">").Append(line).Append("</p>");
+            }
+        }
+
+        return sb.Length > 0 ? sb.ToString() : rawSummary;
     }
 }
