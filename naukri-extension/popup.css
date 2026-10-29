@@ -39,18 +39,23 @@ body {
 }
 
 .brand-mark {
-  width: 30px;
-  height: 30px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
   flex-shrink: 0;
   transition: transform 0.15s ease;
 }
 
 .brand-mark:hover {
   transform: scale(1.04);
+}
+
+.brand-logo-img {
+  height: 30px;
+  width: auto;
+  object-fit: contain;
+  display: block;
 }
 
 .brand-text-wrap {
@@ -61,30 +66,29 @@ body {
 
 .brand-title {
   font-family: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display", "Segoe UI", Roboto, sans-serif;
-  font-size: 17px;
-  font-weight: 700;
-  color: #0f172a;
-  line-height: 1.15;
-  letter-spacing: -0.025em;
+  font-size: 19px;
+  font-weight: 800;
+  color: #0a1a31;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
   display: flex;
   align-items: baseline;
 }
 
 .brand-title .ai-spark {
   font-weight: 850;
-  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 50%, #7c3aed 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #1c5ce0;
+  background: none;
+  -webkit-text-fill-color: initial;
   display: inline-block;
-  padding: 0 0.5px;
-  filter: drop-shadow(0 1px 1px rgba(37, 99, 235, 0.15));
 }
 
 .brand-sub {
-  font-size: 10.5px;
-  font-weight: 500;
-  color: #64748b;
-  letter-spacing: -0.01em;
+  font-size: 8px;
+  font-weight: 700;
+  color: #526682;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .header-right {
