@@ -55,7 +55,19 @@
     return elements;
   }
 
+  function isLinkedInPlatform() {
+    return window.location.hostname.includes('linkedin.com');
+  }
+
   function isCandidateProfilePage() {
+    if (isLinkedInPlatform()) {
+      return !!(
+        window.location.pathname.includes('/talent/') ||
+        window.location.pathname.includes('/recruiter/') ||
+        window.location.pathname.includes('/in/') ||
+        document.querySelector('.profile-topcard, .profile-body, [data-live-test-component*="topcard"], [data-live-test-component*="profile"], .artdeco-entity-lockup, #profile-content, .talent-profile-view, .candidate-drawer, .core-rail')
+      );
+    }
     return !!(
       document.querySelector('.profile-container, .cand-details, #candidate-details, .resdex-profile, .resume-container, .full-profile-view, [data-page-type="candidate-profile"]') ||
       (document.querySelector('.work-experience, .experience-sec, [class*="experience"]') && !document.querySelector('.tuple'))
@@ -64,9 +76,9 @@
 
   function hasAttachedResumeOnPage() {
     const iframe = document.getElementById('cv-iframe') ||
-                   document.querySelector('iframe[title*="Attached CV" i], iframe[id*="cv" i], iframe[src*="resume" i], iframe[src*="preview" i]');
+                   document.querySelector('iframe[title*="Attached CV" i], iframe[id*="cv" i], iframe[src*="resume" i], iframe[src*="preview" i], iframe[title*="resume" i]');
     if (iframe) return true;
-    const direct = document.querySelector('.textLayer, .pdfViewer, #viewerContainer, .resume-container, [class*="resume-preview"], [class*="cv-viewer"]');
+    const direct = document.querySelector('.textLayer, .pdfViewer, #viewerContainer, .resume-container, [class*="resume-preview"], [class*="cv-viewer"], [data-live-test-component="resume-viewer"], .resume-viewer');
     if (direct) return true;
     return false;
   }
@@ -282,6 +294,17 @@
 
   function getPrimaryCandidateContainer() {
     const candidateContainerSelectors = [
+      // LinkedIn Recruiter & Profile Containers
+      '[data-live-test-component="profile-body"]',
+      '[data-live-test-component="profile-container"]',
+      '.profile-body',
+      '.profile-topcard',
+      '.artdeco-card',
+      '#profile-content',
+      '.talent-profile-view',
+      '.candidate-drawer',
+      '.core-rail',
+      // Naukri Containers
       '#candidate-details',
       '.cand-details',
       '.resdex-profile',
@@ -339,11 +362,11 @@
       }
     }
 
-    const directViewer = document.querySelector('.textLayer, .pdfViewer, #viewerContainer, .resume-container, [class*="resume-preview"], [class*="cv-viewer"]');
+    const directViewer = document.querySelector('.textLayer, .pdfViewer, #viewerContainer, .resume-container, [class*="resume-preview"], [class*="cv-viewer"], [data-live-test-component="resume-viewer"], .resume-viewer');
     if (directViewer) {
       const text = cleanText(directViewer.innerText || directViewer.textContent || '');
       if (text && text.length > 50) {
-        console.log(`[Naukri AI Matcher] Extracted ${text.length} chars from direct resume viewer container.`);
+        console.log(`[cAnbIdate] Extracted ${text.length} chars from direct resume viewer container.`);
         return text;
       }
     }
@@ -360,13 +383,15 @@
       `cand_profile_${Date.now()}`;
 
     // Candidate Name
-    const nameCandidateEls = Array.from(primaryContainer.querySelectorAll('.cand-name, .user-name, .name, [class*="candidate-name"], [class*="candName"], h1, .profile-name'))
-      .filter(el => !isInsideExcludedSidebar(el));
+    const nameCandidateEls = Array.from(primaryContainer.querySelectorAll(
+      '.cand-name, .user-name, .name, [class*="candidate-name"], [class*="candName"], .topcard-condensed__title, .artdeco-entity-lockup__title, .profile-topcard-person-details__name, h1.text-heading-xlarge, [data-control-name="topcard_name"], h1, .profile-name'
+    )).filter(el => !isInsideExcludedSidebar(el));
     const fullName = cleanText(nameCandidateEls.length > 0 ? nameCandidateEls[0].innerText : 'Candidate');
 
     // Current Designation
-    const desigCandidateEls = Array.from(primaryContainer.querySelectorAll('.designation, [class*="designation"], .current-role, .subTitle, h2, h3'))
-      .filter(el => !isInsideExcludedSidebar(el));
+    const desigCandidateEls = Array.from(primaryContainer.querySelectorAll(
+      '.designation, [class*="designation"], .current-role, .subTitle, .topcard__headline, .profile-topcard-person-details__headline, .artdeco-entity-lockup__subtitle, .text-body-medium, h2, h3'
+    )).filter(el => !isInsideExcludedSidebar(el));
     const currentDesignation = cleanText(desigCandidateEls.length > 0 ? desigCandidateEls[0].innerText : 'Current Role');
 
     // Total Experience
@@ -488,9 +513,11 @@
   }
 
   /**
-   * Runs the Deep Profile Audit
+   * Runs the Deep Profile Audit (Supports both Naukri & LinkedIn Recruiter)
    */
-  async function runDeepProfileAudit(apiUrl, jobDescription, explicitApiKey = null) {
+  async function runDeepProfileAudit(apiUrl, jobDescription, explicitApiKey = null, platform = 'auto') {
+    const isLinkedIn = platform === 'linkedin_recruiter' || (platform === 'auto' && isLinkedInPlatform());
+
     let modal = document.getElementById('naukriAiAuditModal');
     if (!modal) {
       modal = document.createElement('div');
@@ -499,13 +526,16 @@
       document.body.appendChild(modal);
     }
 
+    const modalTitle = isLinkedIn ? 'LinkedIn Recruiter Evaluation' : 'Candidate Evaluation';
+    const auditSubtitle = isLinkedIn ? 'Auditing LinkedIn Recruiter Profile & Resume' : 'Auditing Career Technology Usage & Resume';
+
     modal.innerHTML = `
       <div class="naukri-ai-modal-card">
         <div class="naukri-ai-modal-header">
           <div class="naukri-ai-modal-title-wrap">
             <span class="naukri-ai-modal-score">...</span>
             <div>
-              <div class="naukri-ai-modal-name">Candidate Evaluation</div>
+              <div class="naukri-ai-modal-name">${modalTitle}</div>
               <span class="naukri-ai-modal-rec rec-caution">Analyzing with AI...</span>
             </div>
           </div>
@@ -513,10 +543,10 @@
         </div>
         <div class="naukri-ai-modal-body" style="padding: 32px; text-align: center; color: #475569;">
           <div style="font-size: 14px; font-weight: 600; color: #0f172a; margin-bottom: 6px;">
-            Auditing Career Technology Usage & Resume
+            ${auditSubtitle}
           </div>
           <div style="font-size: 12.5px; color: #64748b;">
-            Cross-verifying mandatory skills against production project descriptions and attached CV...
+            Cross-verifying mandatory skills against production experience and attached resume...
           </div>
         </div>
       </div>
@@ -532,7 +562,10 @@
       }
 
       const candidateProfile = scrapeDetailedCandidateProfile();
-      const endpoint = `${apiUrl.replace(/\/+$/, '')}/api/analyze-profile`;
+      const cleanBase = apiUrl.replace(/\/+$/, '');
+      const endpoint = isLinkedIn ?
+        `${cleanBase}/api/evaluate/linkedin-recruiter` :
+        `${cleanBase}/api/analyze-profile`;
 
       const requestPayload = {
         jobDescription: {
@@ -549,12 +582,28 @@
       if (apiKey) {
         headers['X-Gemini-Api-Key'] = apiKey;
       }
+      if (isLinkedIn) {
+        headers['X-Platform'] = 'linkedin_recruiter';
+      }
 
-      const auditResult = await callApiThroughExtension(endpoint, requestPayload, headers);
+      let auditResult;
+      try {
+        auditResult = await callApiThroughExtension(endpoint, requestPayload, headers);
+      } catch (endpointErr) {
+        // If the dedicated endpoint is not found (404) or not implemented, seamlessly fall back to analyze-profile
+        if (isLinkedIn && endpointErr.message && (endpointErr.message.includes('404') || endpointErr.message.includes('501'))) {
+          console.warn('[cAnbIdate] Falling back from /api/evaluate/linkedin-recruiter to /api/analyze-profile');
+          const fallbackEndpoint = `${cleanBase}/api/analyze-profile`;
+          auditResult = await callApiThroughExtension(fallbackEndpoint, requestPayload, headers);
+        } else {
+          throw endpointErr;
+        }
+      }
+
       renderAuditSuccess(modal, auditResult);
     } catch (err) {
       console.error('[Deep Profile Audit Error]', err);
-      renderAuditError(modal, err.message, apiUrl, jobDescription);
+      renderAuditError(modal, err.message, apiUrl, jobDescription, isLinkedIn ? 'linkedin_recruiter' : 'naukri');
     }
   }
 
@@ -888,14 +937,21 @@
       ? `<span class="float-resume-pill"><span class="float-resume-tick">✓</span> Resume detected</span>`
       : '';
 
+    const isLinkedIn = isLinkedInPlatform();
+    const btnLabel = isLinkedIn
+      ? 'c<span style="font-weight:850;color:#38bdf8;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">A</span>nb<span style="font-weight:850;color:#38bdf8;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">I</span>date Audit · LinkedIn'
+      : 'c<span style="font-weight:850;color:#38bdf8;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">A</span>nb<span style="font-weight:850;color:#38bdf8;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">I</span>date Audit';
+
     const floatBtn = document.createElement('button');
     floatBtn.id = 'naukriAiFloatAuditBtn';
     floatBtn.className = 'naukri-ai-profile-float-btn';
     floatBtn.innerHTML = `
       ${resumeBadgeHtml}
-      <span class="float-btn-label">c<span style="font-weight:850;color:#38bdf8;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">A</span>nb<span style="font-weight:850;color:#38bdf8;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">I</span>date Audit</span>
+      <span class="float-btn-label">${btnLabel}</span>
     `;
-    floatBtn.title = 'Deeply evaluate candidate experience and skills against requirements';
+    floatBtn.title = isLinkedIn
+      ? 'Evaluate candidate experience and resume from LinkedIn Recruiter'
+      : 'Deeply evaluate candidate experience and skills against requirements';
 
     floatBtn.addEventListener('click', () => {
       chrome.storage.local.get([
@@ -916,7 +972,7 @@
           preferredSkills: (res.naukri_preferred_skills || '').split(',').map(s => s.trim()).filter(Boolean),
           maxNoticePeriodDays: parseInt(res.naukri_max_notice, 10) || 30
         };
-        runDeepProfileAudit(apiUrl, jobDescription, apiKey);
+        runDeepProfileAudit(apiUrl, jobDescription, apiKey, isLinkedIn ? 'linkedin_recruiter' : 'naukri');
       });
     });
 
@@ -935,7 +991,14 @@
       const cards = getCandidateCardElements();
       const isProf = isCandidateProfilePage();
       const hasResume = hasAttachedResumeOnPage();
-      sendResponse({ status: 'ready', cardCount: cards.length, isProfilePage: isProf, hasResume: hasResume });
+      const isLinkedIn = isLinkedInPlatform();
+      sendResponse({
+        status: 'ready',
+        cardCount: cards.length,
+        isProfilePage: isProf,
+        hasResume: hasResume,
+        platform: isLinkedIn ? 'linkedin' : 'naukri'
+      });
       return;
     }
 
@@ -951,9 +1014,15 @@
       return;
     }
 
-    if (request.action === 'START_DEEP_AUDIT') {
-      runDeepProfileAudit(request.apiUrl || 'http://localhost:5000', request.jobDescription, request.apiKey);
-      sendResponse({ started: true });
+    if (request.action === 'START_DEEP_AUDIT' || request.action === 'START_LINKEDIN_AUDIT') {
+      const isLinkedInAction = request.action === 'START_LINKEDIN_AUDIT' || isLinkedInPlatform();
+      runDeepProfileAudit(
+        request.apiUrl || 'http://localhost:5000',
+        request.jobDescription,
+        request.apiKey,
+        isLinkedInAction ? 'linkedin_recruiter' : 'naukri'
+      );
+      sendResponse({ started: true, success: true });
       return;
     }
   });

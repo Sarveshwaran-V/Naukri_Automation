@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkedIn Recruiter - Candidate Profile: Sarah Jenkins</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f3f2ef;
+      color: rgba(0, 0, 0, 0.9);
+      padding: 24px;
+    }
+    .main-layout {
+      max-width: 1040px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .banner-note {
+      background: #0a66c2;
+      color: #ffffff;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .profile-body {
+      background: #ffffff;
+      border: 1px solid #e0dfdc;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .profile-topcard {
+      padding: 24px;
+      border-bottom: 1px solid #e0dfdc;
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+    .avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: #004182;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .topcard-info h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: rgba(0,0,0,0.9);
+      margin-bottom: 4px;
+    }
+    .topcard__headline {
+      font-size: 15px;
+      color: rgba(0,0,0,0.7);
+      margin-bottom: 6px;
+    }
+    .topcard__location {
+      font-size: 13px;
+      color: rgba(0,0,0,0.55);
+    }
+    .section-card {
+      padding: 20px 24px;
+      border-bottom: 1px solid #e0dfdc;
+    }
+    .section-card:last-child {
+      border-bottom: none;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: rgba(0,0,0,0.9);
+    }
+    .experience-item {
+      margin-bottom: 16px;
+    }
+    .exp-title {
+      font-weight: 600;
+      font-size: 14.5px;
+      color: rgba(0,0,0,0.9);
+    }
+    .exp-meta {
+      font-size: 13px;
+      color: rgba(0,0,0,0.6);
+      margin-bottom: 6px;
+    }
+    .exp-desc {
+      font-size: 13px;
+      line-height: 1.5;
+      color: rgba(0,0,0,0.8);
+    }
+    .skills-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .skill-pill {
+      background: #edf3f8;
+      color: #0a66c2;
+      border: 1px solid #c9d8e5;
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 12.5px;
+      font-weight: 600;
+    }
+    .resume-viewer-wrap {
+      margin-top: 10px;
+      border: 1px solid #dcdcdc;
+      border-radius: 6px;
+      background: #fafafa;
+      padding: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="main-layout">
+    <div class="banner-note">
+      <span><strong>🧪 LinkedIn Recruiter Simulation Page:</strong> Test the new <strong>"Analyze LinkedIn Recruiter Profile"</strong> button or page pill.</span>
+      <span style="background: rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 4px; font-size: 11px;">Mock Profile</span>
+    </div>
+
+    <!-- Candidate Main Container (Matches LinkedIn Recruiter DOM selectors) -->
+    <div class="profile-body" data-live-test-component="profile-body" data-candidate-id="li_cand_sarah_jenkins_9012">
+      <!-- Topcard -->
+      <div class="profile-topcard" data-live-test-component="profile-topcard">
+        <div class="avatar">SJ</div>
+        <div class="topcard-info">
+          <h1 class="topcard-condensed__title">Sarah Jenkins</h1>
+          <div class="topcard__headline">Senior .NET Core Full Stack Engineer · Distributed Systems & Microservices</div>
+          <div class="topcard__location">London, England, United Kingdom · Available in 15 days</div>
+        </div>
+      </div>
+
+      <!-- Experience Section -->
+      <div class="section-card experience-section" data-section="experience" data-live-test-component="experience-section">
+        <h2 class="section-title">Experience</h2>
+        <div class="experience-item">
+          <div class="exp-title">Lead .NET Engineer — FinTech Horizons Ltd</div>
+          <div class="exp-meta">Jan 2022 – Present · 4 yrs 10 mos · London, UK</div>
+          <div class="exp-desc">
+            Architected and shipped real-time high-throughput trade settlement services handling 20,000 req/sec using C#, .NET 9/10, ASP.NET Core Minimal APIs, and PostgreSQL. Deployed microservices on Kubernetes (EKS) using Docker and automated CI/CD with GitHub Actions.
+          </div>
+        </div>
+        <div class="experience-item">
+          <div class="exp-title">Senior Software Developer — CloudVantage Systems</div>
+          <div class="exp-meta">Aug 2019 – Dec 2021 · 2 yrs 5 mos</div>
+          <div class="exp-desc">
+            Built scalable enterprise REST APIs in C# and .NET Core with Entity Framework Core and Redis distributed caching. Reduced database query latency by 45%.
+          </div>
+        </div>
+      </div>
+
+      <!-- Skills Section -->
+      <div class="section-card skills-section" data-section="skills" data-live-test-component="skills-section">
+        <h2 class="section-title">Skills</h2>
+        <div class="skills-pills">
+          <span class="skill-pill">C#</span>
+          <span class="skill-pill">.NET Core</span>
+          <span class="skill-pill">ASP.NET Core</span>
+          <span class="skill-pill">Microservices</span>
+          <span class="skill-pill">Entity Framework Core</span>
+          <span class="skill-pill">PostgreSQL</span>
+          <span class="skill-pill">Docker</span>
+          <span class="skill-pill">Kubernetes</span>
+          <span class="skill-pill">Redis</span>
+          <span class="skill-pill">Azure</span>
+          <span class="skill-pill">CI/CD</span>
+        </div>
+      </div>
+
+      <!-- Attached Resume Viewer Simulation -->
+      <div class="section-card">
+        <h2 class="section-title">Attached Resume (Embedded Preview)</h2>
+        <div class="resume-viewer-wrap" data-live-test-component="resume-viewer">
+          <iframe id="cv-iframe" title="Attached CV" style="width: 100%; height: 260px; border: 1px solid #ccc; border-radius: 4px;" srcdoc="
+            <!DOCTYPE html>
+            <html>
+              <head><style>body { font-family: sans-serif; padding: 16px; font-size: 13px; color: #333; line-height: 1.5; }</style></head>
+              <body>
+                <h3>SARAH JENKINS — CURRICULUM VITAE</h3>
+                <p><strong>Primary Stack:</strong> C#, .NET Core, Microservices, PostgreSQL, Docker, Azure, Redis.</p>
+                <p><strong>Recent Projects:</strong> Designed event-driven payment ledger processing millions of daily transactions with 99.99% uptime. Hands-on unit testing (xUnit), integration testing, and CI/CD pipelines.</p>
+              </body>
+            </html>
+          "></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

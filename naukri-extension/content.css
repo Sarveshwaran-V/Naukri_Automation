@@ -231,6 +231,14 @@
   font-weight: 800;
 }
 
+.float-ai-accent {
+  font-weight: 850;
+  color: #38bdf8;
+  background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 /* Modal Overlay & Card */
 .naukri-ai-modal-overlay {
   position: fixed;

@@ -78,4 +78,39 @@ app.MapPost("/api/analyze-profile", async (ProfileAnalysisRequest request, IGemi
     }
 });
 
+// LinkedIn Recruiter candidate profile & resume analysis endpoint
+app.MapPost("/api/evaluate/linkedin-recruiter", async (ProfileAnalysisRequest request, IGeminiService geminiService, CancellationToken ct) =>
+{
+    if (request == null || request.Profile == null)
+    {
+        return Results.BadRequest(new { error = "Request must contain JobDescription and Candidate Profile data." });
+    }
+
+    try
+    {
+        var result = await geminiService.AnalyzeLinkedInProfileAsync(request.JobDescription, request.Profile, ct);
+        return Results.Ok(result);
+    }
+    catch (NotImplementedException)
+    {
+        // Extension-to-backend plumbing is fully operational.
+        // Returns an informational result informing the user how to activate Gemini for LinkedIn.
+        return Results.Ok(new ProfileAnalysisResult(
+            request.Profile.CandidateId,
+            request.Profile.FullName ?? "LinkedIn Recruiter Candidate",
+            0,
+            "BACKEND_PIPELINE_PENDING",
+            "LinkedIn Recruiter profile captured successfully by cAnbIdate extension! Backend endpoint /api/evaluate/linkedin-recruiter received candidate data. To activate full AI evaluations, implement the Gemini prompt inside AnalyzeLinkedInProfileAsync in GeminiService.cs.",
+            new List<TechUsageAudit>(),
+            new List<string> { "Extension DOM extractor verified", "Payload delivered to backend API", "Ready for prompt implementation" },
+            new List<string> { "Backend analysis logic pending in GeminiService.cs" },
+            new List<InterviewQuestionDto>()
+        ));
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
+
 app.Run();

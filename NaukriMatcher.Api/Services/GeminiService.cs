@@ -592,4 +592,24 @@ public class GeminiService : IGeminiService
             questions
         );
     }
+
+    public async Task<ProfileAnalysisResult> AnalyzeLinkedInProfileAsync(
+        JobDescriptionDto jobDescription,
+        DetailedCandidateProfileDto profile,
+        CancellationToken cancellationToken = default)
+    {
+        // =========================================================================
+        // LINKEDIN RECRUITER AI EVALUATION PIPELINE
+        // =========================================================================
+        // When you are ready to activate full Gemini evaluations for LinkedIn Recruiter,
+        // you can simply uncomment the line below to use the deep career technology auditor:
+        //
+        // return await AnalyzeDetailedProfileAsync(jobDescription, profile, cancellationToken);
+        //
+        // Or write custom prompt logic tailored to LinkedIn Recruiter.
+        // The extension is already completely wired to this endpoint!
+        // =========================================================================
+
+        throw new NotImplementedException("LinkedIn Recruiter backend pipeline is pending deployment. Implement prompt logic in AnalyzeLinkedInProfileAsync in GeminiService.cs.");
+    }
 }

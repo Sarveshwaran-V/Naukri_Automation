@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const jobDescriptionInput = document.getElementById('jobDescription');
 
   const deepAuditBtn = document.getElementById('deepAuditBtn');
+  const linkedInAuditBtn = document.getElementById('linkedInAuditBtn');
   const evaluateBtn = document.getElementById('evaluateBtn');
 
   const statusAlert = document.getElementById('statusAlert');
@@ -149,7 +150,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           resumeTick.classList.add('hidden');
         }
 
-        if (response.isProfilePage) {
+        if (response.platform === 'linkedin' || (activeTab.url && activeTab.url.includes('linkedin.com'))) {
+          pageStatus.textContent = 'LinkedIn Recruiter';
+          pageStatus.className = 'status-pill status-ready';
+        } else if (response.isProfilePage) {
           pageStatus.textContent = 'Profile Opened';
           pageStatus.className = 'status-pill status-ready';
         } else if (response.cardCount > 0) {
@@ -234,6 +238,79 @@ document.addEventListener('DOMContentLoaded', async () => {
       deepAuditBtn.querySelector('.btn-text').textContent = 'Deep Analyze Opened Profile & Resume';
     }
   });
+
+  // 5b. Button: Analyze LinkedIn Recruiter Profile
+  if (linkedInAuditBtn) {
+    linkedInAuditBtn.addEventListener('click', async () => {
+      hideAlert();
+      saveForm();
+
+      const apiKey = getGeminiApiKey();
+      const baseApi = getBaseApiUrl();
+      const jobTitle = jobTitleInput.value.trim() || 'Target Role';
+      const rawJobDescription = jobDescriptionInput.value.trim();
+      const mandatorySkills = mandatorySkillsInput.value
+        .split(',')
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+      const preferredSkills = preferredSkillsInput ? preferredSkillsInput.value
+        .split(',')
+        .map(s => s.trim())
+        .filter(s => s.length > 0) : [];
+      const maxNotice = parseInt(maxNoticePeriodInput.value, 10) || 30;
+
+      const jobDescription = {
+        title: jobTitle,
+        rawText: rawJobDescription,
+        mandatorySkills: mandatorySkills,
+        preferredSkills: preferredSkills,
+        maxNoticePeriodDays: maxNotice
+      };
+
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab || !tab.id) {
+        showAlert('No active browser tab found.', 'error');
+        return;
+      }
+
+      const isLinkedIn = tab.url && (tab.url.includes('linkedin.com') || tab.url.includes('talent.linkedin.com'));
+      if (!isLinkedIn) {
+        showAlert('To analyze LinkedIn Recruiter, open a candidate profile or drawer on LinkedIn first.', 'warn');
+        return;
+      }
+
+      linkedInAuditBtn.disabled = true;
+      linkedInAuditBtn.querySelector('.btn-spinner').classList.remove('hidden');
+      linkedInAuditBtn.querySelector('.btn-text').textContent = 'Analyzing LinkedIn Profile...';
+
+      try {
+        await ensureContentScript(tab.id);
+        const response = await chrome.tabs.sendMessage(tab.id, {
+          action: 'START_LINKEDIN_AUDIT',
+          apiUrl: baseApi,
+          jobDescription: jobDescription,
+          apiKey: apiKey
+        });
+
+        if (response && response.success) {
+          showAlert('LinkedIn Recruiter Audit opened on the active tab.', 'success');
+        } else {
+          showAlert(response?.error || 'Could not audit LinkedIn page. Ensure candidate profile or drawer is open.', 'error');
+        }
+      } catch (error) {
+        console.error('[LinkedIn Audit Error]', error);
+        if (error.message && error.message.toLowerCase().includes('api key')) {
+          promptForApiKey();
+        } else {
+          showAlert(`Error: ${error.message || 'Could not communicate with LinkedIn page.'}`, 'error');
+        }
+      } finally {
+        linkedInAuditBtn.disabled = false;
+        linkedInAuditBtn.querySelector('.btn-spinner').classList.add('hidden');
+        linkedInAuditBtn.querySelector('.btn-text').textContent = 'Analyze LinkedIn Recruiter Profile';
+      }
+    });
+  }
 
   // 6. Button: Evaluate Search Page Cards
   evaluateBtn.addEventListener('click', async () => {
