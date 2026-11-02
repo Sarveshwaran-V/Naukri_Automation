@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Naukri AI Candidate Matcher",
+  "name": "cAnbIdate",
   "version": "1.0.0",
   "description": "Evaluates Naukri candidate cards against Job Descriptions using .NET 10 & Gemini AI",
   "permissions": [
@@ -10,8 +10,9 @@
   ],
   "host_permissions": [
     "https://*.naukri.com/*",
-    "http://localhost/*",
-    "https://localhost/*",
+    "https://*.linkedin.com/*",
+    "http://*/*",
+    "https://*/*",
     "file://*/*"
   ],
   "background": {
@@ -34,13 +35,28 @@
     {
       "matches": [
         "https://*.naukri.com/*",
+        "https://*.linkedin.com/*",
         "http://localhost/*",
         "https://localhost/*",
         "file://*/*"
       ],
       "js": ["content.js"],
       "css": ["content.css"],
+      "all_frames": true,
+      "match_about_blank": true,
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*"],
+      "matches": [
+        "https://*.naukri.com/*",
+        "https://*.linkedin.com/*",
+        "http://localhost/*",
+        "https://localhost/*",
+        "file://*/*"
+      ]
     }
   ]
 }

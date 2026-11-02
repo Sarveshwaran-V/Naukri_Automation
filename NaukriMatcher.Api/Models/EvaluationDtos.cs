@@ -9,7 +9,10 @@ public record JobDescriptionDto(
     string Title,
     string RawText,
     List<string> MandatorySkills,
-    int MaxNoticePeriodDays
+    List<string>? PreferredSkills,
+    int MaxNoticePeriodDays,
+    string? Location = null,
+    string? TargetCompany = null
 );
 
 public record CandidateCardDto(
@@ -20,14 +23,19 @@ public record CandidateCardDto(
     string NoticePeriod,
     string Location,
     string AnnualSalary,
-    string Snippet
+    string Snippet,
+    string? CurrentCompany = null
 );
 
 public record EvaluationResult(
     string CandidateId,
     int MatchPercentage,
     string Recommendation,
-    string Reasoning
+    string Reasoning,
+    string? LocationMatch = null,
+    bool? IsRelevantCompany = null,
+    string? CompanyRelevance = null,
+    string? CandidateCompany = null
 );
 
 public record EvaluationResponse(
@@ -70,7 +78,14 @@ public record ProfileAnalysisResult(
     List<TechUsageAudit> TechAudits,
     List<string> Strengths,
     List<string> RedFlags,
-    List<InterviewQuestionDto> InterviewQuestions
+    List<InterviewQuestionDto> InterviewQuestions,
+    string? NoticePeriodCategory = null,      // "Immediate Joiner" / "Short Notice Period" / "Long Notice Period" / "Not Specified"
+    string? RelievedDate = null,               // Exact LWD / relieved date extracted from profile
+    int?    TotalSwitches = null,              // Count of company switches in employment history
+    string? CurrentCompanyHandsOn = null,      // Active daily tech stack at current company
+    int?    CompanyRelevancePercentage = null, // e.g. 90 (relevance % based on TargetCompany domain)
+    string? CompanyRelevanceReason = null,     // Rationale for domain alignment
+    string? TargetCompanyDomain = null         // e.g. "Semiconductor / Semiconductor Equipment"
 );
 
 public record InterviewQuestionDto(
