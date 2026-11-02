@@ -1,6 +1,6 @@
 /**
  * Naukri AI Candidate Matcher - Content Script
- * 1. Search Cards: In-place assessment badges with clean SaaS styling.
+ * 1. Search Cards: In-place assessment badges with clean SaaS styling + Location Indication.
  * 2. Detailed Profile: Deep Career Technology & Resume Audit.
  */
 
@@ -22,6 +22,15 @@
   }
 
   console.log('[Naukri AI Matcher] Content script initialized in top frame.');
+
+  let cachedTargetLocation = '';
+  let cachedTargetCompany = '';
+  try {
+    chrome.storage.local.get(['naukri_target_location', 'naukri_target_company'], (res) => {
+      if (res && res.naukri_target_location) cachedTargetLocation = res.naukri_target_location;
+      if (res && res.naukri_target_company) cachedTargetCompany = res.naukri_target_company;
+    });
+  } catch (e) {}
 
   // Selectors covering modern Naukri Resdex, SRP, and test mock pages
   const CARD_SELECTORS = [
@@ -84,7 +93,7 @@
   }
 
   // ==========================================
-  // SECTION 1: SEARCH PAGE CANDIDATE CARDS (IN-PLACE BADGES)
+  // SECTION 1: SEARCH PAGE CANDIDATE CARDS (IN-PLACE BADGES + LOCATION)
   // ==========================================
 
   function extractCandidateCardData(card, index) {
@@ -97,8 +106,26 @@
 
     card.setAttribute('data-naukri-ai-id', candidateId);
 
+    // Extract candidate name — prioritize candidate-specific name elements and filter out company/org names
+    let candidateName = '';
+    const nameEls = Array.from(card.querySelectorAll('.candidate-name, .cand-name, .user-name, [class*="candidate-name"], [class*="candName"], .name, h2.title, h3.title, a.title'));
+    const validNameEl = nameEls.find(el => {
+      const cls = (el.className || '').toLowerCase();
+      return !cls.includes('company') && !cls.includes('org') && !cls.includes('institute') && !cls.includes('skill');
+    });
+    if (validNameEl) {
+      candidateName = cleanText(validNameEl.innerText);
+    }
+
     const titleEl = card.querySelector('.title, .designation, [class*="designation"], .subTitle, [class*="title"], h2, h3, a.subTitle');
     const designation = cleanText(titleEl ? titleEl.innerText : 'Candidate');
+
+    // Store name on card element for ranking popup
+    if (candidateName) {
+      card.setAttribute('data-candidate-name', candidateName);
+    } else if (!card.getAttribute('data-candidate-name')) {
+      card.setAttribute('data-candidate-name', designation);
+    }
 
     const expEl = card.querySelector('.exp, [class*="exp"], [title*="Yrs"], li[class*="experience"], span[class*="experience"]');
     let totalExperience = cleanText(expEl ? expEl.innerText : '');
@@ -141,11 +168,56 @@
       }
     }
 
-    const locEl = card.querySelector('.loc, [class*="loc"], [title*="Location"], li[class*="location"], span[class*="location"]');
-    let location = cleanText(locEl ? locEl.innerText : '');
+    // Use cached location if already set — prevents badge re-injection from polluting innerText reads
+    const cachedLocAttr = card.getAttribute('data-candidate-location');
+    let location = cachedLocAttr || '';
     if (!location) {
-      const locMatch = card.innerText.match(/(?:Bengaluru|Bangalore|Hyderabad|Pune|Mumbai|Delhi|Noida|Gurgaon|Chennai|Remote|Hybrid)/i);
-      location = locMatch ? locMatch[0] : 'Location not specified';
+      // Exclude the injected badge container from location text scraping
+      const badgeContainer = card.querySelector('.naukri-ai-badge-container');
+      const cardTextSource = badgeContainer ? card.cloneNode(true) : card;
+      if (badgeContainer) {
+        const cloneBadge = cardTextSource.querySelector('.naukri-ai-badge-container');
+        if (cloneBadge) cloneBadge.remove();
+      }
+      const locEl = card.querySelector('.loc, [class*="loc"], [title*="Location"], li[class*="location"], span[class*="location"]');
+      location = cleanText(locEl ? locEl.innerText : '');
+      if (!location) {
+        const rawText = cardTextSource.innerText || card.innerText;
+        const locMatch = rawText.match(/(?:Bengaluru|Bangalore|Hyderabad|Pune|Mumbai|Delhi|Noida|Gurgaon|Chennai|Remote|Hybrid)/i);
+        location = locMatch ? locMatch[0] : 'Location not specified';
+      }
+      card.setAttribute('data-candidate-location', location);
+    }
+
+    // Use cached company if already set — prevents re-injection pollution
+    const cachedCompAttr = card.getAttribute('data-candidate-company');
+    let currentCompany = cachedCompAttr || '';
+    if (!currentCompany) {
+      const companyEl = card.querySelector('.org, .company, [class*="company"], [class*="org"], [title*="Company"], [title*="Current Company"], span.company-name, .company-name');
+      if (companyEl) {
+        currentCompany = cleanText(companyEl.innerText);
+      }
+      if (!currentCompany) {
+        const subTitleEl = card.querySelector('.subTitle, a.subTitle, .designation');
+        const subText = subTitleEl ? subTitleEl.innerText : '';
+        // Strip badge container text before regex search
+        const badgeContainer2 = card.querySelector('.naukri-ai-badge-container');
+        let cardRawText = card.innerText;
+        if (badgeContainer2) {
+          const cloneForComp = card.cloneNode(true);
+          const clBadge = cloneForComp.querySelector('.naukri-ai-badge-container');
+          if (clBadge) clBadge.remove();
+          cardRawText = cloneForComp.innerText;
+        }
+        const atMatch = (subText + ' ' + cardRawText).match(/(?:at|worked at|current(?:ly)? at|company\s*[:\-–]?)\s*([A-Za-z0-9&.,\- ]+?)(?:\s*(?:\||•|\n|experience|exp|yrs|lac|lakh|\(|$))/i);
+        if (atMatch && atMatch[1]) {
+          currentCompany = cleanText(atMatch[1]);
+        }
+      }
+      if (!currentCompany) {
+        currentCompany = 'Company not specified';
+      }
+      card.setAttribute('data-candidate-company', currentCompany);
     }
 
     const salaryEl = card.querySelector('.salary, [class*="salary"], [title*="PA"], [class*="ctc"], span[class*="salary"]');
@@ -165,6 +237,7 @@
       keySkills: Array.from(skillsSet),
       noticePeriod,
       location,
+      currentCompany,
       annualSalary,
       snippet
     };
@@ -176,7 +249,92 @@
     return { count: candidates.length, candidates };
   }
 
-  function injectCardBadge(card, evaluation) {
+  function getLocationIndication(candidateLocation, targetLocation, evaluation) {
+    const candLoc = (candidateLocation || '').trim();
+    const targetLoc = (targetLocation || '').trim();
+
+    if (!targetLoc) {
+      if (!candLoc || candLoc.toLowerCase().includes('not specified')) {
+        return {
+          pillClass: 'loc-unspecified',
+          displayText: 'Location N/A',
+          tooltip: 'Candidate location not specified on profile card'
+        };
+      }
+      return {
+        pillClass: 'loc-neutral',
+        displayText: candLoc,
+        tooltip: `Candidate Location: ${candLoc}`
+      };
+    }
+
+    if (!candLoc || candLoc.toLowerCase().includes('not specified')) {
+      return {
+        pillClass: 'loc-unspecified',
+        displayText: 'Location N/A',
+        tooltip: `Target: ${targetLoc} — Candidate location not found on card`
+      };
+    }
+
+    const metroAliases = {
+      'bengaluru': ['bangalore', 'bengaluru', 'blr'],
+      'bangalore': ['bangalore', 'bengaluru', 'blr'],
+      'mumbai': ['mumbai', 'bombay', 'navi mumbai', 'thane'],
+      'delhi': ['delhi', 'new delhi', 'ncr', 'noida', 'greater noida', 'gurgaon', 'gurugram', 'ghaziabad', 'faridabad'],
+      'noida': ['delhi', 'new delhi', 'ncr', 'noida', 'greater noida', 'gurgaon', 'gurugram', 'ghaziabad', 'faridabad'],
+      'gurgaon': ['delhi', 'new delhi', 'ncr', 'noida', 'greater noida', 'gurgaon', 'gurugram', 'ghaziabad', 'faridabad'],
+      'gurugram': ['delhi', 'new delhi', 'ncr', 'noida', 'greater noida', 'gurgaon', 'gurugram', 'ghaziabad', 'faridabad'],
+      'ncr': ['delhi', 'new delhi', 'ncr', 'noida', 'greater noida', 'gurgaon', 'gurugram', 'ghaziabad', 'faridabad'],
+      'hyderabad': ['hyderabad', 'secunderabad', 'hyd'],
+      'kolkata': ['kolkata', 'calcutta'],
+      'chennai': ['chennai', 'madras'],
+      'pune': ['pune', 'pimpri'],
+      'remote': ['remote', 'wfh', 'work from home', 'anywhere']
+    };
+
+    const candLower = candLoc.toLowerCase();
+    const targetTokens = targetLoc.toLowerCase().split(/[,|/]/).map(t => t.trim()).filter(Boolean);
+
+    let isMatch = false;
+
+    for (const t of targetTokens) {
+      if (candLower.includes(t) || t.includes(candLower)) {
+        isMatch = true;
+        break;
+      }
+      const aliases = metroAliases[t];
+      if (aliases && aliases.some(a => candLower.includes(a))) {
+        isMatch = true;
+        break;
+      }
+      if (candLower.includes('remote') || candLower.includes('wfh')) {
+        isMatch = true;
+        break;
+      }
+    }
+
+    if (evaluation && evaluation.locationMatch) {
+      const lm = evaluation.locationMatch.toUpperCase();
+      if (lm === 'MATCH') isMatch = true;
+      else if (lm === 'RELOCATION') isMatch = false;
+    }
+
+    if (isMatch) {
+      return {
+        pillClass: 'loc-match',
+        displayText: candLoc,
+        tooltip: `Location Match — Target: ${targetLoc} · Candidate: ${candLoc}`
+      };
+    } else {
+      return {
+        pillClass: 'loc-mismatch',
+        displayText: candLoc,
+        tooltip: `Relocation required — Target: ${targetLoc} · Candidate: ${candLoc}`
+      };
+    }
+  }
+
+  function injectCardBadge(card, evaluation, targetLocation, targetCompany) {
     const existing = card.querySelector('.naukri-ai-badge-container');
     if (existing) existing.remove();
 
@@ -194,6 +352,57 @@
       statusLabel = 'Not a Fit';
     }
 
+    const candidateLocation = card.getAttribute('data-candidate-location') ||
+      cleanText(card.querySelector('.loc, [class*="loc"], [title*="Location"]')?.innerText) ||
+      'Location not specified';
+
+    const effectiveTargetLoc = targetLocation || cachedTargetLocation || '';
+    const locInfo = getLocationIndication(candidateLocation, effectiveTargetLoc, evaluation);
+
+    // Notice Period Indication Pill (shown if present on candidate card)
+    let noticePillHtml = '';
+    const rawNotice = card.querySelector('[class*="notice"], [class*="Notice"], .notice-period, [title*="Notice"], [title*="notice"]')?.innerText || '';
+    let parsedNotice = cleanText(rawNotice);
+    if (!parsedNotice) {
+      const match = card.innerText.match(/(?:notice\s*period|notice|availability)\s*[:\-–]?\s*(\b\d+\s*(?:days?|months?|mths?)\b|immediate(?:ly)?|serving\s*notice)/i);
+      if (match) parsedNotice = cleanText(match[1]);
+    }
+    if (!parsedNotice) {
+      const immMatch = card.innerText.match(/\b(immediate\s*joiner|serving\s*notice)\b/i);
+      if (immMatch) parsedNotice = cleanText(immMatch[0]);
+    }
+
+    if (parsedNotice && !parsedNotice.toLowerCase().includes('not specified')) {
+      const pLower = parsedNotice.toLowerCase();
+      let noticeClass = 'notice-short';
+      let noticeDisplay = parsedNotice.replace(/^notice\s*period\s*[:\-–]?\s*/i, '');
+      if (pLower.includes('immediate') || pLower.includes('serving')) {
+        noticeClass = 'notice-immediate';
+        noticeDisplay = pLower.includes('immediate') ? 'Immediate Joiner' : 'Serving Notice';
+      } else {
+        const daysMatch = pLower.match(/(\d+)\s*days?/);
+        if (daysMatch) {
+          const days = parseInt(daysMatch[1], 10);
+          if (days <= 15) noticeClass = 'notice-immediate';
+          else if (days <= 30) noticeClass = 'notice-short';
+          else noticeClass = 'notice-long';
+        }
+      }
+      noticePillHtml = `<span class="naukri-ai-notice-pill ${noticeClass}" title="Notice Period from Card: ${parsedNotice}">⏱️ ${noticeDisplay}</span>`;
+    }
+
+    // Company & Industry Domain Relevance Pill
+    let companyPillHtml = '';
+    const candCompany = evaluation.candidateCompany || card.getAttribute('data-candidate-company') || cleanText(card.querySelector('.org, .company, .companyName')?.innerText) || '';
+    const isRel = evaluation.isRelevantCompany === true;
+    const effectiveTargetComp = targetCompany || cachedTargetCompany || '';
+
+    if (isRel && candCompany && !candCompany.toLowerCase().includes('not specified')) {
+      companyPillHtml = `<span class="naukri-ai-company-pill company-relevant" title="${cleanText(evaluation.companyRelevance || 'Relevant company in target industry domain')}">Relevant: ${candCompany}</span>`;
+    } else if (effectiveTargetComp && candCompany && !candCompany.toLowerCase().includes('not specified')) {
+      companyPillHtml = `<span class="naukri-ai-company-pill company-neutral" title="${cleanText(evaluation.companyRelevance || 'Candidate current company')}">${candCompany}</span>`;
+    }
+
     card.classList.add('naukri-ai-card-highlight');
     card.setAttribute('data-ai-rec', recommendation);
 
@@ -205,6 +414,11 @@
         <div class="naukri-ai-title-wrap">
           <span class="naukri-ai-score-pill">${score}%</span>
           <span class="naukri-ai-tag">${statusLabel}</span>
+          <span class="naukri-ai-location-pill ${locInfo.pillClass}" title="${locInfo.tooltip}">
+            ${locInfo.displayText}
+          </span>
+          ${noticePillHtml}
+          ${companyPillHtml}
         </div>
         <span class="naukri-ai-branding" style="font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;letter-spacing:-0.03em;font-size:12px;font-weight:800;color:#0a1a31;">c<span style="color:#1c5ce0;font-weight:800;">A</span>nb<span style="color:#1c5ce0;font-weight:800;">I</span>date</span>
       </div>
@@ -221,7 +435,78 @@
     }
   }
 
-  function renderCardEvaluations(evaluations) {
+  function showRankingPopup(evaluations) {
+    // Remove any existing ranking popup
+    const existingPopup = document.getElementById('naukriAiRankingPopup');
+    if (existingPopup) existingPopup.remove();
+
+    // Sort evaluations by matchPercentage descending
+    const ranked = [...evaluations]
+      .filter(ev => ev && ev.candidateId)
+      .sort((a, b) => (parseInt(b.matchPercentage, 10) || 0) - (parseInt(a.matchPercentage, 10) || 0));
+
+    if (ranked.length === 0) return;
+
+    const popup = document.createElement('div');
+    popup.id = 'naukriAiRankingPopup';
+    popup.className = 'naukri-ai-ranking-popup';
+
+    let rowsHtml = ranked.map((ev, i) => {
+      const score = parseInt(ev.matchPercentage, 10) || 0;
+      const card = document.querySelector(`[data-naukri-ai-id="${CSS.escape(ev.candidateId)}"]`);
+      const displayName = (card && card.getAttribute('data-candidate-name')) || ev.candidateId;
+      const rec = (ev.recommendation || '').toUpperCase();
+
+      let scoreBg = '#f1f5f9', scoreColor = '#475569';
+      if (score >= 75) { scoreBg = '#166534'; scoreColor = '#fff'; }
+      else if (score >= 50) { scoreBg = '#854d0e'; scoreColor = '#fff'; }
+      else { scoreBg = '#991b1b'; scoreColor = '#fff'; }
+
+      const rankMedal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+
+      return `
+        <div class="naukri-ai-rank-row" data-candidate-id="${ev.candidateId}" title="Click to scroll to candidate card">
+          <span class="naukri-ai-rank-medal">${rankMedal}</span>
+          <span class="naukri-ai-rank-name">${displayName}</span>
+          <span class="naukri-ai-rank-score" style="background:${scoreBg};color:${scoreColor};">${score}%</span>
+        </div>
+      `;
+    }).join('');
+
+    popup.innerHTML = `
+      <div class="naukri-ai-ranking-header">
+        <span class="naukri-ai-ranking-title">Candidate Rankings (${ranked.length})</span>
+        <button type="button" class="naukri-ai-ranking-close" id="closeRankingPopupBtn">×</button>
+      </div>
+      <div class="naukri-ai-ranking-subtitle">By match score · Click name to jump to card</div>
+      <div class="naukri-ai-ranking-list">${rowsHtml}</div>
+    `;
+
+    document.body.appendChild(popup);
+
+    // Close button
+    popup.querySelector('#closeRankingPopupBtn').addEventListener('click', () => popup.remove());
+
+    // Click on row scrolls to that candidate's card
+    popup.querySelectorAll('.naukri-ai-rank-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const cid = row.getAttribute('data-candidate-id');
+        const card = document.querySelector(`[data-naukri-ai-id="${CSS.escape(cid)}"]`);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Brief highlight flash
+          card.style.outline = '2px solid #1c5ce0';
+          card.style.outlineOffset = '2px';
+          setTimeout(() => {
+            card.style.outline = '';
+            card.style.outlineOffset = '';
+          }, 1800);
+        }
+      });
+    });
+  }
+
+  function renderCardEvaluations(evaluations, targetLocation, targetCompany) {
     if (!evaluations || !Array.isArray(evaluations)) return 0;
 
     let injectedCount = 0;
@@ -229,10 +514,15 @@
       if (!ev || !ev.candidateId) return;
       const card = document.querySelector(`[data-naukri-ai-id="${CSS.escape(ev.candidateId)}"]`);
       if (card) {
-        injectCardBadge(card, ev);
+        injectCardBadge(card, ev, targetLocation, targetCompany);
         injectedCount++;
       }
     });
+
+    // Show ranking popup after all badges are injected
+    if (injectedCount > 0) {
+      showRankingPopup(evaluations);
+    }
 
     return injectedCount;
   }
@@ -570,6 +860,8 @@
       const requestPayload = {
         jobDescription: {
           title: jobDescription.title || 'Role',
+          location: jobDescription.location || cachedTargetLocation || '',
+          targetCompany: jobDescription.targetCompany || cachedTargetCompany || '',
           rawText: jobDescription.rawText || '',
           mandatorySkills: jobDescription.mandatorySkills || [],
           preferredSkills: jobDescription.preferredSkills || [],
@@ -590,7 +882,6 @@
       try {
         auditResult = await callApiThroughExtension(endpoint, requestPayload, headers);
       } catch (endpointErr) {
-        // If the dedicated endpoint is not found (404) or not implemented, seamlessly fall back to analyze-profile
         if (isLinkedIn && endpointErr.message && (endpointErr.message.includes('404') || endpointErr.message.includes('501'))) {
           console.warn('[cAnbIdate] Falling back from /api/evaluate/linkedin-recruiter to /api/analyze-profile');
           const fallbackEndpoint = `${cleanBase}/api/analyze-profile`;
@@ -600,7 +891,7 @@
         }
       }
 
-      renderAuditSuccess(modal, auditResult);
+      renderAuditSuccess(modal, auditResult, candidateProfile);
     } catch (err) {
       console.error('[Deep Profile Audit Error]', err);
       renderAuditError(modal, err.message, apiUrl, jobDescription, isLinkedIn ? 'linkedin_recruiter' : 'naukri');
@@ -654,7 +945,7 @@
     return json;
   }
 
-  function renderAuditSuccess(modal, audit) {
+  function renderAuditSuccess(modal, audit, candidateProfile = null) {
     const score = audit.overallSuitabilityScore || 0;
     const rec = (audit.recommendation || 'EVALUATED').toUpperCase();
 
@@ -671,6 +962,10 @@
     const hasResume = hasAttachedResumeOnPage();
     const resumeBadgeHtml = hasResume 
       ? `<span class="resume-verified-badge"><span class="tick">✓</span> Attached CV Verified</span>`
+      : '';
+
+    const candLocPill = candidateProfile && candidateProfile.currentLocation && !candidateProfile.currentLocation.toLowerCase().includes('not specified')
+      ? `<span style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:4px 10px;border-radius:6px;font-size:13px;font-weight:600;">${candidateProfile.currentLocation}</span>`
       : '';
 
     // Technology Career Authenticity items
@@ -751,7 +1046,10 @@
                 ${audit.candidateName || 'Candidate Profile'}
                 ${resumeBadgeHtml}
               </div>
-              <span class="naukri-ai-modal-rec ${recClass}">${recLabel}</span>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:3px;">
+                <span class="naukri-ai-modal-rec ${recClass}">${recLabel}</span>
+                ${candLocPill}
+              </div>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
@@ -762,7 +1060,7 @@
         </div>
 
         <div class="naukri-ai-modal-body">
-          <!-- Executive Assessment -->
+          <!-- Executive Assessment (includes Notice, Company Relevance, Skills breakdown rendered by backend) -->
           <div>
             <div class="naukri-ai-section-title">Executive Assessment</div>
             <div class="naukri-ai-exec-summary">${audit.executiveSummary || 'Profile evaluated against target job.'}</div>
@@ -786,14 +1084,20 @@
             </div>
           </div>
 
-          <!-- Interview Questions -->
-          <div>
-            <div class="naukri-ai-section-title" style="display: flex; justify-content: space-between; align-items: center;">
-              <span>Recommended Screening Questions</span>
-              <span style="font-size: 11px; font-weight: normal; color: #64748b; text-transform: none;">2 Fundamental · 3 Advanced</span>
-            </div>
-            <div class="naukri-ai-questions-stack">${questionsHtml}</div>
-          </div>
+          <!-- Recommended Screening Questions (Collapsible Accordion — Collapsed by Default) -->
+          <details class="naukri-ai-questions-details" id="screeningQuestionsDetails">
+            <summary class="naukri-ai-questions-summary">
+              <div style="display: flex; align-items: center; gap: 7px;">
+                <span class="naukri-ai-collapse-arrow">▶</span>
+                <span class="naukri-ai-section-title" style="margin: 0; font-size: 12px; font-weight: 700; color: #475569;">Recommended Screening Questions (${qList.length})</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 11px; font-weight: normal; color: #64748b;">2 Fundamental · 3 Advanced</span>
+                <span class="naukri-ai-collapse-pill">Expand</span>
+              </div>
+            </summary>
+            <div class="naukri-ai-questions-stack" style="margin-top: 10px;">${questionsHtml}</div>
+          </details>
         </div>
 
         <div class="naukri-ai-modal-footer">
@@ -812,6 +1116,16 @@
     modal.addEventListener('click', (e) => {
       if (e.target === modal) modal.remove();
     });
+
+    const qDetails = modal.querySelector('#screeningQuestionsDetails');
+    if (qDetails) {
+      qDetails.addEventListener('toggle', () => {
+        const pill = qDetails.querySelector('.naukri-ai-collapse-pill');
+        if (pill) {
+          pill.textContent = qDetails.open ? 'Collapse' : 'Expand';
+        }
+      });
+    }
 
     modal.querySelector('#copyAuditReportBtn').addEventListener('click', () => {
       let questionsCopyText = '';
@@ -939,11 +1253,9 @@
       : '';
 
     const isLinkedIn = isLinkedInPlatform();
-    const btnLabel = isLinkedIn
-      ? 'c<span style="color:#60a5fa;font-weight:800;">A</span>nb<span style="color:#60a5fa;font-weight:800;">I</span>date Audit · LinkedIn'
-      : 'c<span style="color:#60a5fa;font-weight:800;">A</span>nb<span style="color:#60a5fa;font-weight:800;">I</span>date Audit';
+    const btnLabel = isLinkedIn ? 'Evaluate · LinkedIn' : 'Evaluate';
 
-    const brandIconImg = `<img src="${chrome.runtime.getURL('icons/brand-mark.png')}" style="height:17px;width:auto;vertical-align:middle;margin-right:4px;" alt="cAnbIdate">`;
+    const brandIconImg = `<img src="${chrome.runtime.getURL('icons/brand-mark.png')}" style="height:16px;width:auto;vertical-align:middle;margin-right:5px;filter:invert(1);opacity:0.9;" alt="cAnbIdate">`;
 
     const floatBtn = document.createElement('button');
     floatBtn.id = 'naukriAiFloatAuditBtn';
@@ -962,6 +1274,8 @@
         'naukri_api_url',
         'naukri_gemini_api_key',
         'naukri_job_title',
+        'naukri_target_location',
+        'naukri_target_company',
         'naukri_mandatory_skills',
         'naukri_preferred_skills',
         'naukri_max_notice',
@@ -971,6 +1285,8 @@
         const apiKey = res.naukri_gemini_api_key || '';
         const jobDescription = {
           title: res.naukri_job_title || 'Target Role',
+          location: res.naukri_target_location || '',
+          targetCompany: res.naukri_target_company || '',
           rawText: res.naukri_job_desc || 'Software Engineer',
           mandatorySkills: (res.naukri_mandatory_skills || '').split(',').map(s => s.trim()).filter(Boolean),
           preferredSkills: (res.naukri_preferred_skills || '').split(',').map(s => s.trim()).filter(Boolean),
@@ -1013,7 +1329,13 @@
     }
 
     if (request.action === 'INJECT_EVALUATIONS') {
-      const count = renderCardEvaluations(request.evaluations);
+      if (request.targetLocation) cachedTargetLocation = request.targetLocation;
+      if (request.targetCompany) cachedTargetCompany = request.targetCompany;
+      const count = renderCardEvaluations(
+        request.evaluations,
+        request.targetLocation || cachedTargetLocation,
+        request.targetCompany || cachedTargetCompany
+      );
       sendResponse({ success: true, injectedCount: count });
       return;
     }
@@ -1031,4 +1353,3 @@
     }
   });
 })();
-

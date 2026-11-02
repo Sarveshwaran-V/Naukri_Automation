@@ -10,8 +10,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const closeSettingsBtn = document.getElementById('closeSettingsBtn');
   const settingsPanel = document.getElementById('settingsPanel');
   const jobTitleInput = document.getElementById('jobTitle');
+  const targetLocationInput = document.getElementById('targetLocation');
+  const targetCompanyInput = document.getElementById('targetCompany');
   const mandatorySkillsInput = document.getElementById('mandatorySkills');
   const preferredSkillsInput = document.getElementById('preferredSkills');
+  const searchStringsInput = document.getElementById('searchStrings');
+  const copyStringBtn = document.getElementById('copyStringBtn');
+  const generateStringBtn = document.getElementById('generateStringBtn');
+  const regenerateStringBtn = document.getElementById('regenerateStringBtn');
   const maxNoticePeriodInput = document.getElementById('maxNoticePeriod');
   const jobDescriptionInput = document.getElementById('jobDescription');
 
@@ -40,23 +46,145 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 2. Restore stored inputs
+  // 2. Boolean Search String Generator (Optimal Recruiter Sourcing Logic)
+  function buildOptimalBooleanString(title, mandatorySkillsStr, preferredSkillsStr) {
+    const andClauses = [];
+
+    // Parse mandatory skills
+    const rawSkills = (mandatorySkillsStr || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    let hasDotNet = false;
+
+    rawSkills.forEach(raw => {
+      const upper = raw.toUpperCase();
+
+      if (upper.includes('.NET') || upper.includes('DOTNET') || upper.includes('C#') || upper.includes('CSHARP') || upper.includes('ASP.NET')) {
+        if (!hasDotNet) {
+          andClauses.push('(".NET" OR "dot net" OR "C#")');
+          hasDotNet = true;
+        }
+        return;
+      }
+
+      if (upper === 'DAPPER') {
+        andClauses.push('"Dapper"');
+        return;
+      }
+
+      if (upper.includes('ENTITY FRAMEWORK') || upper === 'EF' || upper === 'EF CORE') {
+        andClauses.push('("Entity Framework" OR "EF Core")');
+        return;
+      }
+
+      if (upper.includes('REACT')) {
+        andClauses.push('("React" OR "React.js" OR "Reactjs")');
+        return;
+      }
+
+      if (upper.includes('ANGULAR')) {
+        andClauses.push('("Angular" OR "AngularJS")');
+        return;
+      }
+
+      if (upper.includes('NODE')) {
+        andClauses.push('("Node" OR "Node.js" OR "Nodejs")');
+        return;
+      }
+
+      if (upper.includes('PYTHON')) {
+        andClauses.push('"Python"');
+        return;
+      }
+
+      if (upper.includes('JAVA') && !upper.includes('JAVASCRIPT')) {
+        andClauses.push('("Java" OR "Core Java" OR "Spring Boot")');
+        return;
+      }
+
+      if (upper.includes('MICROSERVICES') || upper.includes('MICRO SERVICE')) {
+        andClauses.push('("Microservices" OR "Microservice")');
+        return;
+      }
+
+      if (upper.includes('SQL') || upper.includes('POSTGRESQL') || upper.includes('MYSQL')) {
+        andClauses.push('("SQL" OR "PostgreSQL" OR "SQL Server")');
+        return;
+      }
+
+      if (upper.includes('DOCKER')) {
+        andClauses.push('("Docker" OR "Containers")');
+        return;
+      }
+
+      if (upper.includes('KUBERNETES') || upper === 'K8S') {
+        andClauses.push('("Kubernetes" OR "K8s")');
+        return;
+      }
+
+      if (upper.includes('AZURE')) {
+        andClauses.push('("Azure" OR "Microsoft Azure")');
+        return;
+      }
+
+      if (upper.includes('AWS')) {
+        andClauses.push('("AWS" OR "Amazon Web Services")');
+        return;
+      }
+
+      // Default exact phrase
+      andClauses.push(`"${raw}"`);
+    });
+
+    // Parse role title
+    const t = (title || '').toLowerCase();
+    if (t.includes('developer') || t.includes('engineer') || t.includes('programmer')) {
+      andClauses.push('("developer" OR "engineer" OR "programmer")');
+    } else if (t.includes('architect')) {
+      andClauses.push('("architect" OR "technical lead" OR "tech lead")');
+    } else if (t.includes('lead')) {
+      andClauses.push('("lead" OR "team lead" OR "lead engineer")');
+    } else if (t.includes('tester') || t.includes('qa') || t.includes('quality')) {
+      andClauses.push('("QA" OR "tester" OR "SDET" OR "test engineer")');
+    } else if (title && title.trim()) {
+      andClauses.push(`"${title.trim()}"`);
+    }
+
+    if (andClauses.length === 0) {
+      return '(".NET" OR "dot net" OR "C#") AND "Dapper" AND ("developer" OR "engineer" OR "programmer")';
+    }
+
+    return andClauses.join(' AND ');
+  }
+
+  // 3. Restore stored inputs
   chrome.storage.local.get([
     'naukri_api_url',
     'naukri_gemini_api_key',
     'naukri_job_title',
+    'naukri_target_location',
+    'naukri_target_company',
     'naukri_mandatory_skills',
     'naukri_preferred_skills',
+    'naukri_search_strings',
     'naukri_max_notice',
     'naukri_job_desc'
   ], (res) => {
     if (res.naukri_api_url) apiUrlInput.value = res.naukri_api_url;
     if (res.naukri_gemini_api_key && geminiApiKeyInput) geminiApiKeyInput.value = res.naukri_gemini_api_key;
     if (res.naukri_job_title) jobTitleInput.value = res.naukri_job_title;
+    if (res.naukri_target_location && targetLocationInput) targetLocationInput.value = res.naukri_target_location;
+    if (res.naukri_target_company && targetCompanyInput) targetCompanyInput.value = res.naukri_target_company;
     if (res.naukri_mandatory_skills) mandatorySkillsInput.value = res.naukri_mandatory_skills;
     if (res.naukri_preferred_skills && preferredSkillsInput) preferredSkillsInput.value = res.naukri_preferred_skills;
     if (res.naukri_max_notice !== undefined) maxNoticePeriodInput.value = res.naukri_max_notice;
     if (res.naukri_job_desc) jobDescriptionInput.value = res.naukri_job_desc;
+
+    if (res.naukri_search_strings && searchStringsInput) {
+      searchStringsInput.value = res.naukri_search_strings;
+    }
   });
 
   function saveForm() {
@@ -64,21 +192,122 @@ document.addEventListener('DOMContentLoaded', async () => {
       naukri_api_url: apiUrlInput.value.trim(),
       naukri_gemini_api_key: geminiApiKeyInput ? geminiApiKeyInput.value.trim() : '',
       naukri_job_title: jobTitleInput.value.trim(),
+      naukri_target_location: targetLocationInput ? targetLocationInput.value.trim() : '',
+      naukri_target_company: targetCompanyInput ? targetCompanyInput.value.trim() : '',
       naukri_mandatory_skills: mandatorySkillsInput.value.trim(),
       naukri_preferred_skills: preferredSkillsInput ? preferredSkillsInput.value.trim() : '',
+      naukri_search_strings: searchStringsInput ? searchStringsInput.value.trim() : '',
       naukri_max_notice: maxNoticePeriodInput.value.trim(),
       naukri_job_desc: jobDescriptionInput.value.trim()
     });
   }
 
-  [apiUrlInput, geminiApiKeyInput, jobTitleInput, mandatorySkillsInput, preferredSkillsInput, maxNoticePeriodInput, jobDescriptionInput].forEach(el => {
+  [apiUrlInput, geminiApiKeyInput, jobTitleInput, targetLocationInput, targetCompanyInput, mandatorySkillsInput, preferredSkillsInput, searchStringsInput, maxNoticePeriodInput, jobDescriptionInput].forEach(el => {
     if (el) {
       el.addEventListener('input', saveForm);
       el.addEventListener('change', saveForm);
     }
   });
 
-  // 3. Toggle HTTP / HTTPS quick switch
+  // 4a. Generate String Button — on-demand local boolean string builder (reveals field on click)
+  if (generateStringBtn && searchStringsInput) {
+    generateStringBtn.addEventListener('click', () => {
+      const title = jobTitleInput.value.trim() || 'Software Engineer';
+      const generated = buildOptimalBooleanString(title, mandatorySkillsInput.value, preferredSkillsInput ? preferredSkillsInput.value : '');
+      searchStringsInput.value = generated;
+      saveForm();
+      const container = document.getElementById('stringsFieldContainer');
+      if (container) {
+        container.classList.remove('hidden');
+      }
+      showAlert('Boolean search string generated.', 'success');
+    });
+  }
+
+  // 4b. Copy Boolean Search String Button
+  if (copyStringBtn && searchStringsInput) {
+    copyStringBtn.addEventListener('click', async () => {
+      const text = searchStringsInput.value.trim();
+      if (!text) {
+        showAlert('No search string to copy. Click "Generate String" to create one.', 'warn');
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        const originalText = copyStringBtn.textContent;
+        copyStringBtn.textContent = '✓ Copied!';
+        copyStringBtn.classList.add('copied');
+        setTimeout(() => {
+          copyStringBtn.textContent = originalText;
+          copyStringBtn.classList.remove('copied');
+        }, 1500);
+      } catch (err) {
+        // Fallback copy
+        searchStringsInput.select();
+        document.execCommand('copy');
+        copyStringBtn.textContent = '✓ Copied!';
+        setTimeout(() => { copyStringBtn.textContent = '📋 Copy String'; }, 1500);
+      }
+    });
+  }
+
+  // 5. Regenerate Boolean Search String Button (uses backend API or local generator)
+  if (regenerateStringBtn && searchStringsInput) {
+    regenerateStringBtn.addEventListener('click', async () => {
+      const title = jobTitleInput.value.trim() || 'Software Engineer';
+      const mandatorySkills = mandatorySkillsInput.value
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+      const preferredSkills = preferredSkillsInput ? preferredSkillsInput.value
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean) : [];
+      const location = targetLocationInput ? targetLocationInput.value.trim() : '';
+      const rawText = jobDescriptionInput.value.trim();
+
+      regenerateStringBtn.textContent = 'Generating...';
+
+      try {
+        const baseApi = getBaseApiUrl();
+        const apiKey = getGeminiApiKey();
+        const headers = {};
+        if (apiKey) headers['X-Gemini-Api-Key'] = apiKey;
+
+        const res = await callApiViaBackground(`${baseApi}/api/generate-search-string`, {
+          title,
+          mandatorySkills,
+          preferredSkills,
+          location,
+          rawText,
+          maxNoticePeriodDays: parseInt(maxNoticePeriodInput.value, 10) || 30
+        }, headers);
+
+        if (res && res.searchString) {
+          searchStringsInput.value = res.searchString;
+          saveForm();
+          const container = document.getElementById('stringsFieldContainer');
+          if (container) container.classList.remove('hidden');
+          showAlert('Boolean search string regenerated using AI.', 'success');
+          return;
+        }
+      } catch (e) {
+        // Fallback to deterministic optimal string generator
+      } finally {
+        regenerateStringBtn.textContent = '⚡ AI Refine';
+      }
+
+      // Local fallback
+      const localString = buildOptimalBooleanString(title, mandatorySkillsInput.value, preferredSkillsInput ? preferredSkillsInput.value : '');
+      searchStringsInput.value = localString;
+      saveForm();
+      const container = document.getElementById('stringsFieldContainer');
+      if (container) container.classList.remove('hidden');
+      showAlert('Boolean search string regenerated.', 'info');
+    });
+  }
+
+  // 6. Toggle HTTP / HTTPS quick switch
   if (toggleHttpBtn) {
     toggleHttpBtn.addEventListener('click', () => {
       const current = apiUrlInput.value.trim();
@@ -95,7 +324,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function getBaseApiUrl() {
     const full = apiUrlInput.value.trim() || 'http://localhost:5000';
-    return full.replace(/\/api\/(evaluate|analyze-profile).*/i, '').replace(/\/+$/, '');
+    return full.replace(/\/api\/(evaluate|analyze-profile|generate-search-string).*/i, '').replace(/\/+$/, '');
   }
 
   function getGeminiApiKey() {
@@ -137,7 +366,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // 4. Check active tab status & detect attached resume
+  // 7. Check active tab status & detect attached resume
   const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (activeTab && activeTab.id) {
     try {
@@ -170,7 +399,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // 5. Button: Deep Analyze Opened Profile & Resume
+  // 8. Button: Deep Analyze Opened Profile & Resume
   deepAuditBtn.addEventListener('click', async () => {
     hideAlert();
     saveForm();
@@ -178,6 +407,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const apiKey = getGeminiApiKey();
     const baseApi = getBaseApiUrl();
     const jobTitle = jobTitleInput.value.trim() || 'Target Role';
+    const targetLocation = targetLocationInput ? targetLocationInput.value.trim() : '';
+    const targetCompany = targetCompanyInput ? targetCompanyInput.value.trim() : '';
     const rawJobDescription = jobDescriptionInput.value.trim();
     const mandatorySkills = mandatorySkillsInput.value
       .split(',')
@@ -213,6 +444,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         apiKey: apiKey,
         jobDescription: {
           title: jobTitle,
+          location: targetLocation,
+          targetCompany: targetCompany,
           rawText: rawJobDescription,
           mandatorySkills: mandatorySkills,
           preferredSkills: preferredSkills,
@@ -239,7 +472,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // 5b. Button: Analyze LinkedIn Recruiter Profile
+  // 8b. Button: Analyze LinkedIn Recruiter Profile
   if (linkedInAuditBtn) {
     linkedInAuditBtn.addEventListener('click', async () => {
       hideAlert();
@@ -248,6 +481,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const apiKey = getGeminiApiKey();
       const baseApi = getBaseApiUrl();
       const jobTitle = jobTitleInput.value.trim() || 'Target Role';
+      const targetLocation = targetLocationInput ? targetLocationInput.value.trim() : '';
+      const targetCompany = targetCompanyInput ? targetCompanyInput.value.trim() : '';
       const rawJobDescription = jobDescriptionInput.value.trim();
       const mandatorySkills = mandatorySkillsInput.value
         .split(',')
@@ -261,6 +496,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const jobDescription = {
         title: jobTitle,
+        location: targetLocation,
+        targetCompany: targetCompany,
         rawText: rawJobDescription,
         mandatorySkills: mandatorySkills,
         preferredSkills: preferredSkills,
@@ -312,7 +549,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 6. Button: Evaluate Search Page Cards
+  // 9. Button: Evaluate Search Page Cards
   evaluateBtn.addEventListener('click', async () => {
     hideAlert();
     saveForm();
@@ -322,6 +559,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const baseApi = getBaseApiUrl();
     const evaluateUrl = `${baseApi}/api/evaluate`;
     const jobTitle = jobTitleInput.value.trim() || 'Role';
+    const targetLocation = targetLocationInput ? targetLocationInput.value.trim() : '';
+    const targetCompany = targetCompanyInput ? targetCompanyInput.value.trim() : '';
     const rawJobDescription = jobDescriptionInput.value.trim();
     const mandatorySkills = mandatorySkillsInput.value
       .split(',')
@@ -362,6 +601,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const requestPayload = {
         jobDescription: {
           title: jobTitle,
+          location: targetLocation,
+          targetCompany: targetCompany,
           rawText: rawJobDescription,
           mandatorySkills: mandatorySkills,
           preferredSkills: preferredSkills,
@@ -384,7 +625,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const injectRes = await chrome.tabs.sendMessage(currentTab.id, {
         action: 'INJECT_EVALUATIONS',
-        evaluations: evaluations
+        evaluations: evaluations,
+        targetLocation: targetLocation,
+        targetCompany: targetCompany
       });
 
       let worthCount = 0;

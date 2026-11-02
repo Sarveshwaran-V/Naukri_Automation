@@ -82,6 +82,11 @@
       color: #475569;
       font-weight: 500;
     }
+    .org, .company {
+      font-size: 13px;
+      color: #64748b;
+      font-style: italic;
+    }
     .tuple-meta {
       display: flex;
       flex-wrap: wrap;
@@ -139,19 +144,22 @@
         <span>naukri.com</span>
         <span style="font-size: 13px; color: #64748b; font-weight: normal;">| Resdex Search Simulation</span>
       </div>
-      <div class="search-meta">Query: <strong>.NET Core Backend Developer</strong> (Showing 4 Candidates)</div>
+      <div class="search-meta">Query: <strong>.NET Core Backend Developer</strong> (Showing 5 Candidates)</div>
     </div>
 
     <div class="instruction-banner">
       <strong>🧪 Candidate Search Page Simulation:</strong> Click the <strong>Naukri AI Matcher</strong> extension icon in your Chrome toolbar and select <strong>"Evaluate Search Page Cards"</strong> to stamp match badges (Worth Opening / Maybe / Skip) directly on each card in place. To test the <strong>Deep Career Technology Auditor</strong>, open <a href="test-candidate-profile.html" style="color: #0369a1; font-weight: bold; text-decoration: underline;">Aditya Verma's Full Profile Simulation</a>!
+      <br><br>
+      <strong>🏢 Company Domain Test:</strong> Set "Company" field to <strong>KLA</strong> in the popup to test semiconductor industry domain relevance detection. Cards from Tata Electronics, Micron, ASM Technologies will be flagged as relevant.
     </div>
 
-    <!-- Candidate Card 1 (Strong Match) -->
+    <!-- Candidate Card 1 (Strong Match - Tata Electronics - Semiconductor) -->
     <div class="tuple" data-tuple-id="naukri_cand_101">
       <div class="tuple-header">
         <div>
           <div class="candidate-name">Arun Kumar</div>
-          <div class="title">Lead .NET Core & Microservices Developer</div>
+          <div class="title">Lead .NET Core &amp; Microservices Developer</div>
+          <div class="org">Tata Electronics</div>
         </div>
         <button class="btn-action">View Profile</button>
       </div>
@@ -170,16 +178,17 @@
         <span class="tag">REST API</span>
       </div>
       <div class="snippet">
-        5+ years of experience architecting high-throughput microservices using .NET 8 / .NET Core and C#. Deep expertise in PostgreSQL, Docker containers, and CI/CD pipelines. Actively looking and available in 15 days.
+        5+ years of experience architecting high-throughput microservices using .NET 8 / .NET Core and C#. Deep expertise in PostgreSQL, Docker containers, and CI/CD pipelines. Currently at Tata Electronics semiconductor division. Actively looking and available in 15 days.
       </div>
     </div>
 
-    <!-- Candidate Card 2 (Moderate / Maybe Match) -->
+    <!-- Candidate Card 2 (Moderate / Maybe Match - Micron - Semiconductor) -->
     <div class="tuple" data-tuple-id="naukri_cand_102">
       <div class="tuple-header">
         <div>
           <div class="candidate-name">Pooja Sharma</div>
-          <div class="title">Full Stack Engineer (C# & React)</div>
+          <div class="title">Full Stack Engineer (C# &amp; React)</div>
+          <div class="org">Micron Technology</div>
         </div>
         <button class="btn-action">View Profile</button>
       </div>
@@ -197,16 +206,17 @@
         <span class="tag">REST APIs</span>
       </div>
       <div class="snippet">
-        Experienced in building web applications with ASP.NET, C#, and React frontends. Familiar with monolithic architectures and basic REST endpoints. Notice period is 30 days.
+        Experienced in building web applications with ASP.NET, C#, and React frontends. Familiar with monolithic architectures and basic REST endpoints. Currently working at Micron Technology. Notice period is 30 days.
       </div>
     </div>
 
-    <!-- Candidate Card 3 (Knockout: Long Notice Period) -->
+    <!-- Candidate Card 3 (Knockout: Long Notice Period - ASM Technologies) -->
     <div class="tuple" data-tuple-id="naukri_cand_103">
       <div class="tuple-header">
         <div>
           <div class="candidate-name">Vikram Malhotra</div>
           <div class="title">Senior Software Architect - .NET</div>
+          <div class="org">ASM Technologies</div>
         </div>
         <button class="btn-action">View Profile</button>
       </div>
@@ -225,16 +235,17 @@
         <span class="tag">AWS</span>
       </div>
       <div class="snippet">
-        Senior Architect handling large-scale distributed systems in enterprise finance. High technical overlap with .NET Core and microservices, but bound by a strict 90-day non-negotiable notice period.
+        Senior Architect handling large-scale distributed systems in enterprise semiconductor equipment software at ASM Technologies. High technical overlap with .NET Core and microservices, but bound by a strict 90-day non-negotiable notice period.
       </div>
     </div>
 
-    <!-- Candidate Card 4 (Knockout: Skill Mismatch) -->
+    <!-- Candidate Card 4 (Knockout: Skill Mismatch - Infosys) -->
     <div class="tuple" data-tuple-id="naukri_cand_104">
       <div class="tuple-header">
         <div>
           <div class="candidate-name">Sneha Patil</div>
           <div class="title">Backend Java Developer</div>
+          <div class="org">Infosys</div>
         </div>
         <button class="btn-action">View Profile</button>
       </div>
@@ -252,16 +263,17 @@
         <span class="tag">Microservices</span>
       </div>
       <div class="snippet">
-        Java Spring Boot developer with experience in microservices development, Redis cache, and MySQL database management. Immediate joiner. No hands-on background in C# or .NET Core.
+        Java Spring Boot developer with experience in microservices development, Redis cache, and MySQL database management. Immediate joiner. No hands-on background in C# or .NET Core. Currently at Infosys, IT Services division.
       </div>
     </div>
 
-    <!-- Candidate Card 5 (Notice Period NOT Specified in card or snippet) -->
+    <!-- Candidate Card 5 (Notice Period NOT Specified - KLA) -->
     <div class="tuple" data-tuple-id="naukri_cand_105">
       <div class="tuple-header">
         <div>
-          <div class="candidate-name">Kunal Bansal (No Notice Mentioned)</div>
+          <div class="candidate-name">Kunal Bansal</div>
           <div class="title">Senior .NET Core Backend Engineer</div>
+          <div class="org">KLA Corporation</div>
         </div>
         <button class="btn-action">View Profile</button>
       </div>
@@ -279,7 +291,7 @@
         <span class="tag">Entity Framework</span>
       </div>
       <div class="snippet">
-        Backend C# .NET developer focused on distributed transaction APIs. Built 4 microservices across 2 quarters with Entity Framework. No notice period stated on card.
+        Backend C# .NET developer focused on distributed transaction APIs at KLA Corporation (semiconductor capital equipment). Built 4 microservices across 2 quarters with Entity Framework. No notice period stated on card.
       </div>
     </div>
   </div>

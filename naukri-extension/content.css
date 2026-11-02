@@ -46,7 +46,8 @@
 .naukri-ai-title-wrap {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 7px;
 }
 
 .naukri-ai-score-pill {
@@ -81,6 +82,133 @@
 .badge-fit .naukri-ai-tag { color: #166534; }
 .badge-review .naukri-ai-tag { color: #854d0e; }
 .badge-pass .naukri-ai-tag { color: #991b1b; }
+
+/* Location Indication Pill in Profile Card Evaluation - Enlarged and Legible */
+.naukri-ai-location-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 5px;
+  white-space: nowrap;
+  letter-spacing: -0.1px;
+  line-height: 1.3;
+}
+
+.naukri-ai-location-pill::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.naukri-ai-location-pill.loc-match {
+  background-color: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.naukri-ai-location-pill.loc-match::before {
+  background-color: #16a34a;
+}
+
+.naukri-ai-location-pill.loc-mismatch {
+  background-color: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.naukri-ai-location-pill.loc-mismatch::before {
+  background-color: #d97706;
+}
+
+.naukri-ai-location-pill.loc-unspecified {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  border: 1px solid #e2e8f0;
+}
+
+.naukri-ai-location-pill.loc-unspecified::before {
+  background-color: #cbd5e1;
+}
+
+.naukri-ai-location-pill.loc-neutral {
+  background-color: #f8fafc;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.naukri-ai-location-pill.loc-neutral::before {
+  background-color: #94a3b8;
+}
+
+/* Notice Period Indication Pill */
+.naukri-ai-notice-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  letter-spacing: -0.15px;
+  line-height: 1.3;
+  background-color: #f8fafc;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.naukri-ai-notice-pill.notice-immediate {
+  background-color: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.naukri-ai-notice-pill.notice-short {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.naukri-ai-notice-pill.notice-long {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+/* Company / Industry Domain Relevance Pill */
+.naukri-ai-company-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  letter-spacing: -0.15px;
+  line-height: 1.3;
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.naukri-ai-company-pill.company-relevant {
+  background-color: #f5f3ff;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
+
+.naukri-ai-company-pill.company-neutral {
+  background-color: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
 
 .naukri-ai-branding {
   font-size: 10.5px;
@@ -191,26 +319,27 @@
   bottom: 24px;
   right: 24px;
   z-index: 99999;
-  background: #0f172a;
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 9999px;
-  padding: 10px 18px;
-  font-size: 12.5px;
-  font-weight: 600;
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 9px !important;
+  padding: 13px 24px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
   display: flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45) !important;
   cursor: pointer;
   transition: all 0.15s ease;
   font-family: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  letter-spacing: -0.01em;
 }
 
 .naukri-ai-profile-float-btn:hover {
-  background: #1e293b;
+  background: #1a1a1a !important;
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.3);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55) !important;
 }
 
 .float-resume-pill {
@@ -478,6 +607,63 @@
   color: #334155;
 }
 
+/* Collapsible Recommended Screening Questions */
+.naukri-ai-questions-details {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px 14px;
+  transition: all 0.2s ease;
+}
+
+.naukri-ai-questions-details[open] {
+  background: #fcfcfd;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.naukri-ai-questions-summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 !important;
+  padding: 2px 0;
+}
+
+.naukri-ai-questions-summary::-webkit-details-marker {
+  display: none;
+}
+
+.naukri-ai-collapse-arrow {
+  display: inline-block;
+  font-size: 10px;
+  color: #64748b;
+  transition: transform 0.2s ease;
+}
+
+.naukri-ai-questions-details[open] .naukri-ai-collapse-arrow {
+  transform: rotate(90deg);
+}
+
+.naukri-ai-collapse-pill {
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: -0.1px;
+  transition: all 0.15s ease;
+}
+
+.naukri-ai-questions-summary:hover .naukri-ai-collapse-pill {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
 /* HR Interview Screening Questions */
 .naukri-ai-questions-stack {
   display: flex;
@@ -635,4 +821,113 @@
 
 .naukri-ai-modal-btn-close:hover {
   background: #f1f5f9;
+}
+
+/* ─── Candidate Ranking Popup ─────────────────────────────────────────── */
+.naukri-ai-ranking-popup {
+  position: fixed;
+  bottom: 80px;
+  right: 24px;
+  z-index: 99998;
+  width: 300px;
+  max-height: 420px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: rankPopupIn 0.2s ease-out;
+}
+
+@keyframes rankPopupIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.naukri-ai-ranking-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 6px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.naukri-ai-ranking-title {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.naukri-ai-ranking-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #94a3b8;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.naukri-ai-ranking-close:hover {
+  color: #0f172a;
+}
+
+.naukri-ai-ranking-subtitle {
+  font-size: 10.5px;
+  color: #94a3b8;
+  padding: 0 14px 8px;
+}
+
+.naukri-ai-ranking-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.naukri-ai-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+  border: 1px solid transparent;
+}
+
+.naukri-ai-rank-row:hover {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.naukri-ai-rank-medal {
+  font-size: 13px;
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+}
+
+.naukri-ai-rank-name {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.naukri-ai-rank-score {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 4px;
+  flex-shrink: 0;
 }
