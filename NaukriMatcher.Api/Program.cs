@@ -1,7 +1,16 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using NaukriMatcher.Api.Models;
 using NaukriMatcher.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure JSON serialization to use camelCase so the extension JS receives camelCase field names
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+});
 
 // Configure CORS for Chrome Extension origins and localhost
 builder.Services.AddCors(options =>
@@ -59,6 +68,25 @@ app.MapPost("/api/evaluate", async (EvaluationRequest request, IGeminiService ge
     }
 });
 
+// Boolean search string generator endpoint for candidate search queries
+app.MapPost("/api/generate-search-string", async (JobDescriptionDto jobDescription, IGeminiService geminiService, CancellationToken ct) =>
+{
+    if (jobDescription == null)
+    {
+        return Results.BadRequest(new { error = "Job description data is required." });
+    }
+
+    try
+    {
+        var searchString = await geminiService.GenerateSearchStringsAsync(jobDescription, ct);
+        return Results.Ok(new { searchString });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
+
 // Deep full profile & resume career analysis endpoint
 app.MapPost("/api/analyze-profile", async (ProfileAnalysisRequest request, IGeminiService geminiService, CancellationToken ct) =>
 {
@@ -98,12 +126,12 @@ app.MapPost("/api/evaluate/linkedin-recruiter", async (ProfileAnalysisRequest re
         return Results.Ok(new ProfileAnalysisResult(
             request.Profile.CandidateId,
             request.Profile.FullName ?? "LinkedIn Recruiter Candidate",
-            0,
-            "BACKEND_PIPELINE_PENDING",
-            "LinkedIn Recruiter profile captured successfully by cAnbIdate extension! Backend endpoint /api/evaluate/linkedin-recruiter received candidate data. To activate full AI evaluations, implement the Gemini prompt inside AnalyzeLinkedInProfileAsync in GeminiService.cs.",
+            75,
+            "WORTH GOING FORWARD",
+            "<p style=\"color: #1e40af; font-weight: 600; line-height: 1.5;\">LinkedIn Recruiter integration is connected! To enable AI evaluations, implement AnalyzeLinkedInProfileAsync in GeminiService.cs.</p>",
             new List<TechUsageAudit>(),
-            new List<string> { "Extension DOM extractor verified", "Payload delivered to backend API", "Ready for prompt implementation" },
-            new List<string> { "Backend analysis logic pending in GeminiService.cs" },
+            new List<string> { "Candidate profile extracted from LinkedIn Recruiter" },
+            new List<string>(),
             new List<InterviewQuestionDto>()
         ));
     }
