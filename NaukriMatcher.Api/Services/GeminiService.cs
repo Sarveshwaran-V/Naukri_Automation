@@ -359,14 +359,24 @@ public class GeminiService : IGeminiService
                  * If the candidate is STRONG / verified in that skill, format it as: <span style="color: #166534; font-weight: 600; background: #dcfce7; padding: 1px 5px; border-radius: 3px;">SkillName</span>
                  * If the candidate is NOT STRONG / weak / missing in that skill, format it as: <span style="color: #991b1b; font-weight: 600; background: #fee2e2; padding: 1px 5px; border-radius: 3px;">SkillName</span>
 
-            2. CRUCIAL FACTOR — Notice Period & Relieved Date Analysis:
-               - Scrutinize the full profile text and employment history for any mention of: relieved date, last working day (LWD), exit date, notice period, serving notice, or immediate joiner.
-               - Categorize the candidate into EXACTLY ONE of these four categories (noticePeriodCategory):
-                 * "Immediate Joiner"    → Already relieved / serving 0-15 days notice / states "immediate"
-                 * "Short Notice Period" → 16 to 30 days notice period
-                 * "Long Notice Period"  → 45, 60, 90 days or more notice period
-                 * "Not Specified"       → ANTI-HALLUCINATION GUARD: use ONLY if no notice period or relieved date information is found anywhere. NEVER invent days.
-               - relievedDate: Extract the exact relieved/LWD date text as stated (e.g. "Relieved on 15-Oct-2023", "Last Working Day: 31-Mar-2024"). If not found, set to null.
+            2. CRUCIAL FACTOR — Notice Period & Availability Analysis (Naukri Categories):
+               - Scrutinize the candidate profile, full profile text, noticePeriod, and employment history for any mention of: notice period, availability, serving notice, immediate joiner, relieved date, or last working day (LWD).
+               - Reference date for current time: {DateTime.UtcNow:dd-MMM-yyyy}.
+               - Categorize the candidate into EXACTLY ONE of these categories (noticePeriodCategory):
+                 * "Immediate Joiner"                → Ready to join right away without a notice period (e.g. states "immediate joiner", "ready to join immediately", already relieved, 0 days notice).
+                 * "Serving Notice Period"          → Candidate has officially resigned and is currently serving their notice period (has an active Last Working Day / LWD).
+                 * "15 Days Notice Period"          → Standard notice period of 15 days or less (1 to 15 days).
+                 * "1 Month Notice Period"          → Standard notice period of 1 month (16 to 30 days).
+                 * "2 Months Notice Period"         → Standard notice period of 2 months (31 to 60 days).
+                 * "3 Months Notice Period"         → Standard notice period of 3 months (61 to 90 days).
+                 * "3 Months and More Notice Period"→ Notice period of more than 3 months (> 90 days).
+                 * "Notice Not Specified"           → ANTI-HALLUCINATION GUARD: use ONLY if no notice period or availability is found. NEVER invent days.
+               - If candidate is "Serving Notice Period":
+                 * servingNoticeDaysLeft: Specify the integer number of days left in their notice period (e.g. 15). Calculate this from their stated Last Working Day (LWD) compared to {DateTime.UtcNow:dd-MMM-yyyy}, or from explicit text like "serving notice (15 days left)".
+                 * relievedDate: Extract their exact Last Working Day / LWD text (e.g. "Last Working Day: 25-Nov-2024").
+               - If candidate is "Immediate Joiner":
+                 * servingNoticeDaysLeft: 0
+                 * relievedDate: If already relieved, extract the relieved date text (e.g. "Relieved on 15-Oct-2024"). If not, set to null.
                - In executiveSummary, always state the recruiter impact of their availability clearly.
 
             3. CRITICAL FACTOR — Current Company Hands-On Experience:
@@ -437,6 +447,7 @@ public class GeminiService : IGeminiService
               "companyRelevanceReason": "Tata Electronics operates directly in semiconductor and electronics manufacturing, creating direct domain alignment with KLA.",
               "targetCompanyDomain": "Semiconductor & Capital Equipment",
               "noticePeriodCategory": "Immediate Joiner",
+              "servingNoticeDaysLeft": 0,
               "relievedDate": "Relieved on 15-Oct-2023",
               "totalSwitches": 2,
               "currentCompanyHandsOn": "Active daily production in C#, .NET 8, PostgreSQL, Docker",
@@ -570,22 +581,33 @@ public class GeminiService : IGeminiService
                             var result = JsonSerializer.Deserialize<ProfileAnalysisResult>(cleaned, JsonOptions);
                             if (result != null && result.InterviewQuestions != null && result.InterviewQuestions.Count > 0)
                             {
+                                var noticeInfo = ResolveNoticePeriodInfo(
+                                    result.NoticePeriodCategory,
+                                    result.ServingNoticeDaysLeft,
+                                    result.RelievedDate,
+                                    profile.NoticePeriod,
+                                    profile.FullProfileRawText);
+
                                 return result with
                                 {
                                     CandidateId = string.IsNullOrWhiteSpace(result.CandidateId) ? profile.CandidateId : result.CandidateId,
                                     CandidateName = string.IsNullOrWhiteSpace(result.CandidateName) ? profile.FullName : result.CandidateName,
+                                    NoticePeriodCategory = noticeInfo.Category,
+                                    ServingNoticeDaysLeft = noticeInfo.DaysLeft,
+                                    RelievedDate = noticeInfo.RelievedDate,
                                     ExecutiveSummary = FormatExecutiveSummaryHtml(
                                         result.ExecutiveSummary,
                                         result.TechAudits,
-                                        result.NoticePeriodCategory,
-                                        result.RelievedDate,
+                                        noticeInfo.Category,
+                                        noticeInfo.RelievedDate,
                                         result.TotalSwitches,
                                         result.CurrentCompanyHandsOn,
                                         jobDescription.MandatorySkills,
                                         jobDescription.TargetCompany,
                                         result.CompanyRelevancePercentage,
                                         result.CompanyRelevanceReason,
-                                        result.TargetCompanyDomain)
+                                        result.TargetCompanyDomain,
+                                        noticeInfo.DaysLeft)
                                 };
                             }
                         }
@@ -621,6 +643,19 @@ public class GeminiService : IGeminiService
         // Extract critical factor fields
         string? noticeCat = root.TryGetProperty("noticePeriodCategory", out var ncProp) ? ncProp.GetString() : null;
         string? relieved  = root.TryGetProperty("relievedDate", out var rdProp) ? rdProp.GetString() : null;
+        int? servingDays  = null;
+        if (root.TryGetProperty("servingNoticeDaysLeft", out var sndlProp) && sndlProp.ValueKind == JsonValueKind.Number)
+        {
+            servingDays = sndlProp.GetInt32();
+        }
+
+        var noticeInfo = ResolveNoticePeriodInfo(
+            noticeCat,
+            servingDays,
+            relieved,
+            profile.NoticePeriod,
+            profile.FullProfileRawText);
+
         int? switches     = null;
         if (root.TryGetProperty("totalSwitches", out var swProp) && swProp.ValueKind == JsonValueKind.Number)
         {
@@ -657,15 +692,16 @@ public class GeminiService : IGeminiService
         summary = FormatExecutiveSummaryHtml(
             summary,
             techAudits,
-            noticeCat,
-            relieved,
+            noticeInfo.Category,
+            noticeInfo.RelievedDate,
             switches,
             handsOn,
             jobDescription.MandatorySkills,
             jobDescription.TargetCompany,
             compRelPct,
             compRelReason,
-            targetDomain);
+            targetDomain,
+            noticeInfo.DaysLeft);
 
         var strengths = new List<string>();
         if (root.TryGetProperty("strengths", out var strArray) && strArray.ValueKind == JsonValueKind.Array)
@@ -733,13 +769,14 @@ public class GeminiService : IGeminiService
             strengths,
             redFlags,
             questions,
-            noticeCat,
-            relieved,
+            noticeInfo.Category,
+            noticeInfo.RelievedDate,
             switches,
             handsOn,
             compRelPct,
             compRelReason,
-            targetDomain
+            targetDomain,
+            noticeInfo.DaysLeft
         );
     }
 
@@ -1001,6 +1038,187 @@ public class GeminiService : IGeminiService
         return string.Join(" AND ", andClauses);
     }
 
+    private record NoticePeriodInfo(string Category, int? DaysLeft, string? RelievedDate);
+
+    private static NoticePeriodInfo ResolveNoticePeriodInfo(
+        string? geminiCategory,
+        int? geminiDaysLeft,
+        string? geminiRelievedDate,
+        string? profileNoticeText,
+        string? profileFullRawText)
+    {
+        string rawCombined = $"{profileNoticeText} {geminiRelievedDate} {profileFullRawText}".ToLowerInvariant();
+        string profileNotice = (profileNoticeText ?? "").Trim().ToLowerInvariant();
+
+        // 1. Check for Immediate Joiner
+        bool isImmediate = false;
+        if (!string.IsNullOrWhiteSpace(geminiCategory) &&
+            geminiCategory.Contains("Immediate", StringComparison.OrdinalIgnoreCase))
+        {
+            isImmediate = true;
+        }
+        else if (profileNotice.Contains("immediate") || Regex.IsMatch(profileNotice, @"\b0\s*days?\b") || profileNotice == "0" ||
+                 profileNotice.Contains("join immediately") || profileNotice.Contains("ready to join") ||
+                 profileNotice.Contains("already relieved"))
+        {
+            isImmediate = true;
+        }
+        else if (Regex.IsMatch(rawCombined, @"\b(immediate\s*joiner|immediately\s*available|ready\s*to\s*join\s*(?:immediately|right\s*away)|available\s*to\s*join\s*immediately)\b"))
+        {
+            isImmediate = true;
+        }
+
+        // 2. Check for Serving Notice Period
+        bool isServing = false;
+        if (!isImmediate)
+        {
+            if (!string.IsNullOrWhiteSpace(geminiCategory) &&
+                geminiCategory.Contains("Serving", StringComparison.OrdinalIgnoreCase))
+            {
+                isServing = true;
+            }
+            else if (profileNotice.Contains("serving") || Regex.IsMatch(rawCombined, @"\b(serving\s*notice|currently\s*serving|on\s*notice\s*period)\b"))
+            {
+                isServing = true;
+            }
+        }
+
+        int? daysLeft = geminiDaysLeft;
+        string? relievedDate = geminiRelievedDate;
+
+        // If relieving / LWD date is not provided, try to extract from text
+        if (string.IsNullOrWhiteSpace(relievedDate))
+        {
+            var lwdMatch = Regex.Match(rawCombined, @"(?:last\s*working\s*day|lwd|relieved\s*on|relieving\s*date|exit\s*date)\s*[:\-–]?\s*(\d{1,2}[\/\-\s][A-Za-z]{3,9}[\/\-\s]\d{2,4}|\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})", RegexOptions.IgnoreCase);
+            if (lwdMatch.Success)
+            {
+                relievedDate = lwdMatch.Value.Trim();
+            }
+        }
+
+        // If serving notice, calculate or extract days left if not already provided
+        if (isServing)
+        {
+            if (!daysLeft.HasValue || daysLeft <= 0)
+            {
+                // Try to find explicit "X days left / remaining"
+                var daysMatch = Regex.Match(rawCombined, @"(\d+)\s*(?:days?|d)\s*(?:left|remaining|to\s*serve)", RegexOptions.IgnoreCase);
+                if (daysMatch.Success && int.TryParse(daysMatch.Groups[1].Value, out int extractedDays))
+                {
+                    daysLeft = extractedDays;
+                }
+                else if (!string.IsNullOrWhiteSpace(relievedDate))
+                {
+                    // Try to parse LWD date and calculate difference from today
+                    var dateStrMatch = Regex.Match(relievedDate, @"\d{1,2}[\/\-\s][A-Za-z]{3,9}[\/\-\s]\d{2,4}|\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}");
+                    if (dateStrMatch.Success && DateTime.TryParse(dateStrMatch.Value, out var lwdDate))
+                    {
+                        var diff = (lwdDate.Date - DateTime.UtcNow.Date).Days;
+                        if (diff >= 0)
+                        {
+                            daysLeft = diff;
+                        }
+                        else
+                        {
+                            // LWD was in the past -> candidate is already relieved!
+                            isImmediate = true;
+                            isServing = false;
+                            daysLeft = 0;
+                        }
+                    }
+                }
+            }
+
+            if (isServing)
+            {
+                return new NoticePeriodInfo("Serving Notice Period", daysLeft, relievedDate);
+            }
+        }
+
+        if (isImmediate)
+        {
+            return new NoticePeriodInfo("Immediate Joiner", 0, relievedDate);
+        }
+
+        // 3. Otherwise, categorize into standard Naukri categories:
+        // - 15 Days Notice Period (<= 15 days)
+        // - 1 Month Notice Period (16 to 30 days)
+        // - 2 Months Notice Period (31 to 60 days)
+        // - 3 Months Notice Period (61 to 90 days)
+        // - 3 Months and More Notice Period (> 90 days)
+        // - Notice Not Specified
+
+        string gemCat = (geminiCategory ?? "").Trim();
+        if (gemCat.Contains("15 Day", StringComparison.OrdinalIgnoreCase))
+            return new NoticePeriodInfo("15 Days Notice Period", null, relievedDate);
+        if (gemCat.Contains("1 Month", StringComparison.OrdinalIgnoreCase))
+            return new NoticePeriodInfo("1 Month Notice Period", null, relievedDate);
+        if (gemCat.Contains("2 Month", StringComparison.OrdinalIgnoreCase))
+            return new NoticePeriodInfo("2 Months Notice Period", null, relievedDate);
+        if (gemCat.Contains("3 Month", StringComparison.OrdinalIgnoreCase) && (gemCat.Contains("More", StringComparison.OrdinalIgnoreCase) || gemCat.Contains("+")))
+            return new NoticePeriodInfo("3 Months and More Notice Period", null, relievedDate);
+        if (gemCat.Contains("3 Month", StringComparison.OrdinalIgnoreCase))
+            return new NoticePeriodInfo("3 Months Notice Period", null, relievedDate);
+
+        // Check explicit words in profileNotice for > 3 months first
+        if (profileNotice.Contains("more than 3") || profileNotice.Contains("3 months and more") ||
+            profileNotice.Contains("3 month and more") || profileNotice.Contains("3 months or more") ||
+            profileNotice.Contains("3+ month") || profileNotice.Contains("> 3 month") || profileNotice.Contains(">3 month"))
+        {
+            return new NoticePeriodInfo("3 Months and More Notice Period", null, relievedDate);
+        }
+
+        // Fallback: parse numeric days from profile notice text
+        int parsedDays = ParseNumericNoticeDays(profileNoticeText);
+        if (parsedDays > 0)
+        {
+            if (parsedDays <= 15)
+                return new NoticePeriodInfo("15 Days Notice Period", null, relievedDate);
+            if (parsedDays <= 30)
+                return new NoticePeriodInfo("1 Month Notice Period", null, relievedDate);
+            if (parsedDays <= 60)
+                return new NoticePeriodInfo("2 Months Notice Period", null, relievedDate);
+            if (parsedDays <= 90)
+                return new NoticePeriodInfo("3 Months Notice Period", null, relievedDate);
+            return new NoticePeriodInfo("3 Months and More Notice Period", null, relievedDate);
+        }
+
+        if (profileNotice.Contains("1 month") || profileNotice.Contains("30 day"))
+            return new NoticePeriodInfo("1 Month Notice Period", null, relievedDate);
+        if (profileNotice.Contains("2 month") || profileNotice.Contains("60 day"))
+            return new NoticePeriodInfo("2 Months Notice Period", null, relievedDate);
+        if (profileNotice.Contains("3 month") || profileNotice.Contains("90 day"))
+            return new NoticePeriodInfo("3 Months Notice Period", null, relievedDate);
+        if (profileNotice.Contains("15 day"))
+            return new NoticePeriodInfo("15 Days Notice Period", null, relievedDate);
+
+        return new NoticePeriodInfo("Notice Not Specified", null, relievedDate);
+    }
+
+    private static int ParseNumericNoticeDays(string? noticeText)
+    {
+        if (string.IsNullOrWhiteSpace(noticeText)) return -1;
+        var lower = noticeText.Trim().ToLowerInvariant();
+
+        if (lower.Contains("immediate") || Regex.IsMatch(lower, @"\b0\s*days?\b") || lower == "0") return 0;
+        if (lower.Contains("15 day")) return 15;
+        if (lower.Contains("1 month") || lower.Contains("30 day")) return 30;
+        if (lower.Contains("2 month") || lower.Contains("60 day")) return 60;
+        if (lower.Contains("3 month") || lower.Contains("90 day")) return 90;
+
+        var match = Regex.Match(lower, @"(\d+)\s*(day|month|mth)");
+        if (match.Success && int.TryParse(match.Groups[1].Value, out int count))
+        {
+            if (match.Groups[2].Value.StartsWith("m"))
+            {
+                return count * 30;
+            }
+            return count;
+        }
+
+        return -1;
+    }
+
     private static string FormatExecutiveSummaryHtml(
         string rawSummary,
         IReadOnlyList<TechUsageAudit>? techAudits = null,
@@ -1012,16 +1230,21 @@ public class GeminiService : IGeminiService
         string? targetCompany = null,
         int? companyRelevancePercentage = null,
         string? companyRelevanceReason = null,
-        string? targetCompanyDomain = null)
+        string? targetCompanyDomain = null,
+        int? servingNoticeDaysLeft = null)
     {
         var sb = new StringBuilder();
 
         // ── Card 1: Crucial Factor — Notice Period & Relieved Date ──────────────────
         {
-            string cat = noticePeriodCategory ?? "Not Specified";
+            string cat = noticePeriodCategory ?? "Notice Not Specified";
             bool isImmediate = cat.Equals("Immediate Joiner", StringComparison.OrdinalIgnoreCase);
-            bool isShort     = cat.Equals("Short Notice Period", StringComparison.OrdinalIgnoreCase);
-            bool isLong      = cat.Equals("Long Notice Period", StringComparison.OrdinalIgnoreCase);
+            bool isServing   = cat.Equals("Serving Notice Period", StringComparison.OrdinalIgnoreCase);
+            bool is15Days    = cat.StartsWith("15 Day", StringComparison.OrdinalIgnoreCase);
+            bool is1Month    = cat.StartsWith("1 Month", StringComparison.OrdinalIgnoreCase);
+            bool is2Months   = cat.StartsWith("2 Month", StringComparison.OrdinalIgnoreCase);
+            bool is3MonthsMore = cat.Contains("3 Month", StringComparison.OrdinalIgnoreCase) && (cat.Contains("More", StringComparison.OrdinalIgnoreCase) || cat.Contains("+"));
+            bool is3Months   = !is3MonthsMore && cat.StartsWith("3 Month", StringComparison.OrdinalIgnoreCase);
 
             string cardBg, cardBorder, pillBg, pillColor, pillText, recruiterImpact;
 
@@ -1029,22 +1252,54 @@ public class GeminiService : IGeminiService
             {
                 cardBg = "#f0fdf4"; cardBorder = "#86efac";
                 pillBg = "#16a34a"; pillColor = "#ffffff";
-                pillText = "Immediate Joiner (<=15d)";
-                recruiterImpact = "High availability — candidate can join within 15 days. Strong preference for urgent requirements.";
+                pillText = "Immediate Joiner (0 Days)";
+                recruiterImpact = "Immediate availability — candidate is ready to join right away without serving any notice period. Strong preference for urgent requirements.";
             }
-            else if (isShort)
+            else if (isServing)
+            {
+                cardBg = "#f0f9ff"; cardBorder = "#7dd3fc";
+                pillBg = "#0284c7"; pillColor = "#ffffff";
+                pillText = servingNoticeDaysLeft.HasValue && servingNoticeDaysLeft.Value >= 0
+                    ? $"Serving Notice ({servingNoticeDaysLeft.Value} Days Left)"
+                    : "Serving Notice Period";
+                recruiterImpact = servingNoticeDaysLeft.HasValue && servingNoticeDaysLeft.Value >= 0
+                    ? $"Candidate has officially resigned and is currently serving notice with {servingNoticeDaysLeft.Value} days remaining. Fast hiring turnaround."
+                    : "Candidate has officially resigned and is currently serving notice period. Fast hiring turnaround — confirm exact last working day.";
+            }
+            else if (is15Days)
+            {
+                cardBg = "#f0fdf4"; cardBorder = "#86efac";
+                pillBg = "#16a34a"; pillColor = "#ffffff";
+                pillText = "15 Days Notice Period";
+                recruiterImpact = "Short notice — candidate requires 15 days notice period. High availability for standard and priority hiring timelines.";
+            }
+            else if (is1Month)
             {
                 cardBg = "#fffbeb"; cardBorder = "#fcd34d";
                 pillBg = "#d97706"; pillColor = "#ffffff";
-                pillText = "Short Notice (16-30d)";
-                recruiterImpact = "Good availability — candidate can join within 30 days. Suitable for standard hiring timelines.";
+                pillText = "1 Month Notice Period";
+                recruiterImpact = "Standard notice — candidate requires 1 month (30 days) notice period. Suitable for standard corporate hiring schedules.";
             }
-            else if (isLong)
+            else if (is2Months)
+            {
+                cardBg = "#fff7ed"; cardBorder = "#fdba74";
+                pillBg = "#ea580c"; pillColor = "#ffffff";
+                pillText = "2 Months Notice Period";
+                recruiterImpact = "Moderate notice — candidate requires 2 months (60 days) notice period. Suitable for advance planning; evaluate buyout if urgent.";
+            }
+            else if (is3Months)
             {
                 cardBg = "#fff1f2"; cardBorder = "#fca5a5";
                 pillBg = "#dc2626"; pillColor = "#ffffff";
-                pillText = "Long Notice (60-90d+)";
-                recruiterImpact = "Delay risk — long notice period may not align with timeline. Confirm buyout or negotiation options.";
+                pillText = "3 Months Notice Period";
+                recruiterImpact = "Standard corporate 3-month (90 days) notice period. Evaluate buyout, early release negotiations, or offer retention risk.";
+            }
+            else if (is3MonthsMore)
+            {
+                cardBg = "#fff1f2"; cardBorder = "#f87171";
+                pillBg = "#991b1b"; pillColor = "#ffffff";
+                pillText = "3 Months or More Notice Period";
+                recruiterImpact = "Extended notice — candidate requires more than 3 months notice period. Significant delay risk; explore buyout options immediately.";
             }
             else
             {
@@ -1054,9 +1309,20 @@ public class GeminiService : IGeminiService
                 recruiterImpact = "Notice period not found in profile. Confirm availability directly during screening call.";
             }
 
-            string lwdRow = !string.IsNullOrWhiteSpace(relievedDate)
-                ? $"<div style=\"margin-top: 4px; font-size: 12px; color: #374151;\"><strong>Relieved Date / LWD:</strong> {relievedDate}</div>"
-                : string.Empty;
+            var extraRows = new StringBuilder();
+            if (isServing && servingNoticeDaysLeft.HasValue && servingNoticeDaysLeft.Value >= 0)
+            {
+                extraRows.Append($"<div style=\"margin-top: 4px; font-size: 12px; color: #0369a1;\"><strong>Days Left in Notice Period:</strong> <span style=\"font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 4px;\">{servingNoticeDaysLeft.Value} Days Left</span></div>");
+            }
+            else if (isImmediate)
+            {
+                extraRows.Append("<div style=\"margin-top: 4px; font-size: 12px; color: #15803d;\"><strong>Status:</strong> Ready to join right away without notice period</div>");
+            }
+
+            if (!string.IsNullOrWhiteSpace(relievedDate))
+            {
+                extraRows.Append($"<div style=\"margin-top: 4px; font-size: 12px; color: #374151;\"><strong>Relieved Date / LWD:</strong> {relievedDate}</div>");
+            }
 
             sb.Append($"""
                 <div style="background: {cardBg}; border: 1px solid {cardBorder}; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px;">
@@ -1065,7 +1331,7 @@ public class GeminiService : IGeminiService
                     <span style="background: {pillBg}; color: {pillColor}; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px;">{pillText}</span>
                   </div>
                   <div style="font-size: 12px; color: #374151;"><strong>Category:</strong> {cat}</div>
-                  {lwdRow}
+                  {extraRows}
                   <div style="margin-top: 4px; font-size: 12px; color: #4b5563; font-style: italic;">{recruiterImpact}</div>
                 </div>
                 """);

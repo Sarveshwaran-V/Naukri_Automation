@@ -79,13 +79,14 @@ public record ProfileAnalysisResult(
     List<string> Strengths,
     List<string> RedFlags,
     List<InterviewQuestionDto> InterviewQuestions,
-    string? NoticePeriodCategory = null,      // "Immediate Joiner" / "Short Notice Period" / "Long Notice Period" / "Not Specified"
+    string? NoticePeriodCategory = null,      // "Immediate Joiner" / "Serving Notice Period" / "15 Days Notice Period" / "1 Month Notice Period" / "2 Months Notice Period" / "3 Months Notice Period" / "3 Months and More Notice Period" / "Notice Not Specified"
     string? RelievedDate = null,               // Exact LWD / relieved date extracted from profile
     int?    TotalSwitches = null,              // Count of company switches in employment history
     string? CurrentCompanyHandsOn = null,      // Active daily tech stack at current company
     int?    CompanyRelevancePercentage = null, // e.g. 90 (relevance % based on TargetCompany domain)
     string? CompanyRelevanceReason = null,     // Rationale for domain alignment
-    string? TargetCompanyDomain = null         // e.g. "Semiconductor / Semiconductor Equipment"
+    string? TargetCompanyDomain = null,        // e.g. "Semiconductor / Semiconductor Equipment"
+    int?    ServingNoticeDaysLeft = null       // Number of days left if candidate is serving notice period
 );
 
 public record InterviewQuestionDto(
